@@ -1,11 +1,17 @@
 spring:
   application:
     name: zelin_codez
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3308/zelin_codez?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+    # 数据库用户名
+    username: root
+    # 数据库密码
+    password: 111111
 server:
   port: 8123
   servlet:
     context-path: /api
----
 # springdoc-openapi
 springdoc:
   group-configs:
@@ -16,4 +22,5 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
-
+mybatis-flex:
+  mapper-locations: classpath:/mapper/*.xml
