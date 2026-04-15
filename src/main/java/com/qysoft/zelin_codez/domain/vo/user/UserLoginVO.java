@@ -1,6 +1,5 @@
 package com.qysoft.zelin_codez.domain.vo.user;
 
-import com.mybatisflex.annotation.Column;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,7 +26,8 @@ public class UserLoginVO implements Serializable {
     /**
      * 账号
      */
-    @Column("userAccount")
     private String userAccount;
+
+    private String userName;
 
 }
