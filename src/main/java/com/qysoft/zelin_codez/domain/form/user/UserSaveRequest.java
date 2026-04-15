@@ -1,10 +1,7 @@
 package com.qysoft.zelin_codez.domain.form.user;
-import com.mybatisflex.annotation.Column;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 /**
  * @Description 用户保存请求

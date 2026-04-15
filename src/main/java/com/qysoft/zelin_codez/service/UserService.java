@@ -9,6 +9,7 @@ import com.qysoft.zelin_codez.domain.form.user.UserQueryRequest;
 import com.qysoft.zelin_codez.domain.form.user.UserRegisterRequest;
 import com.qysoft.zelin_codez.domain.vo.user.UploadAvatarVO;
 import com.qysoft.zelin_codez.domain.vo.user.UserLoginVO;
+import com.qysoft.zelin_codez.domain.vo.user.UserQueryVO;
 import com.qysoft.zelin_codez.domain.vo.user.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MultipartFile;
@@ -70,4 +71,14 @@ public interface UserService extends IService<User> {
      * @return
      */
     UploadAvatarVO uploadAvatar(MultipartFile file, UploadAvatarRequest request);
+
+    /**
+     * 获取用户查询VO
+     *
+     * @param user
+     * @return
+     */
+    UserQueryVO getUserQueryVO(User user);
+
+    QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest);
 }

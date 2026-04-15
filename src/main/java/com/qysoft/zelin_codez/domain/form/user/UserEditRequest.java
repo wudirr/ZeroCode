@@ -8,14 +8,14 @@ import java.io.Serial;
 import java.io.Serializable;
 
 /**
- * @Description 用户更新请求
+ * @Description 用户编辑模型
  * @Author wudi
- * @Date 2026/4/7 11:29
+ * @Date 2026/4/7 17:00
  **/
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-public class UserUpdateRequest implements Serializable {
+@AllArgsConstructor
+public class UserEditRequest implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 

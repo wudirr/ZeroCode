@@ -33,9 +33,4 @@ public class UserLoginRequest implements Serializable {
      * 密码
      */
     private String userPassword;
-
-    /**
-     * 用户昵称
-     */
-    private String userName;
 }

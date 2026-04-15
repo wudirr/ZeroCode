@@ -15,3 +15,6 @@ create table if not exists user
     UNIQUE KEY uk_userAccount (userAccount),
     INDEX idx_userName (userName)
     ) comment '用户' collate = utf8mb4_unicode_ci;
+
+ALTER TABLE user
+    MODIFY userAvatar varchar(1024) NULL DEFAULT 'https://zeicil-1393261113.cos.ap-shanghai.myqcloud.com/public/user-2016506272590823424/2026-02-16_sy97ubu07oioxq67-thumbnil.jpeg' COMMENT '用户头像';

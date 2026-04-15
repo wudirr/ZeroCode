@@ -35,7 +35,7 @@ public class UserRegisterRequest implements Serializable {
     private String userPassword;
 
     /**
-     * 用户昵称
+     * 重复填写的密码
      */
-    private String userName;
+    private String checkPassword;
 }

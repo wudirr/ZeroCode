@@ -14,7 +14,6 @@ import java.io.Serializable;
  **/
 @Data
 @AllArgsConstructor
-@NoArgsConstructor
 public class UploadAvatarVO implements Serializable{
     @Serial
     private static final long serialVersionUID = 1L;

@@ -1,11 +1,10 @@
 package com.qysoft.zelin_codez.domain.form.user;
 
 import com.mybatisflex.annotation.Column;
-import com.mybatisflex.annotation.Id;
-import com.mybatisflex.annotation.KeyType;
-import com.mybatisflex.core.keygen.KeyGenerators;
+import com.qysoft.zelin_codez.common.PageRequest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.io.Serial;
@@ -14,13 +13,14 @@ import java.time.LocalDateTime;
 
 /**
  * @Description 用户查询请求
- * @Author wudi
+ * @Author wudil
  * @Date 2026/4/7 11:30
  **/
+@EqualsAndHashCode(callSuper = true)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserQueryRequest implements Serializable {
+public class UserQueryRequest extends PageRequest implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
     /**
