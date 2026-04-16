@@ -1,3 +1,6 @@
+import UserLoginPage from '@/components/UserLoginPage.vue'
+import UserManagerPage from '@/components/UserManagerPage.vue'
+import UserRegisterPage from '@/components/UserRegisterPage.vue'
 import HomeView from '@/views/HomeView.vue'
 
 export const routes = [
@@ -7,11 +10,23 @@ export const routes = [
     component: HomeView,
   },
   {
+    path: '/user/login',
+    name: 'login',
+    component: UserLoginPage,
+  },
+  {
+    path: '/user/register',
+    name: 'register',
+    component: UserRegisterPage,
+  },
+  {
+    path: '/admin/user/manage',
+    name: 'userManage',
+    component: UserManagerPage,
+  },
+  {
     path: '/about',
     name: 'about',
-    // route level code-splitting
-    // this generates a separate chunk (About.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
     component: () => import('../views/AboutView.vue'),
   },
 ]
