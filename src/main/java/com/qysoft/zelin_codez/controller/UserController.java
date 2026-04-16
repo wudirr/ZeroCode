@@ -79,7 +79,6 @@ public class UserController {
      */
     @GetMapping("/get/login")
     public Result<UserQueryVO> getLoginUser(HttpServletRequest request) {
-        log.info("获取登录用户");
         User user = userService.getLoginUser(request);
         return Result.success(userService.getUserQueryVO(user));
     }
@@ -92,7 +91,6 @@ public class UserController {
      */
     @GetMapping("/logout")
     public Result<Boolean> userLogout(HttpServletRequest request) {
-        log.info("用户登出");
         Boolean res = userService.logout(request);
         return Result.success(res);
     }
