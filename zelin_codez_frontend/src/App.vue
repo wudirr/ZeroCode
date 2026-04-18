@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import BasicLayout from '@/layouts/BasicLayout.vue'
-import { themeConfig } from './theme/themeConfig';
-import { ConfigProvider } from 'ant-design-vue';
+import { themeConfig } from './theme/themeConfig'
+import { ConfigProvider } from 'ant-design-vue'
+import '@/access'
 </script>
 
 <template>
@@ -10,7 +11,7 @@ import { ConfigProvider } from 'ant-design-vue';
 </template>
 
 <style>
-.ant-btn-default.ant-btn-background-ghost{
+.ant-btn-default.ant-btn-background-ghost {
   border-color: #00c2ff;
   color: #00c2ff;
 }
