@@ -1,3 +1,4 @@
+import NoAuthPage from '@/components/NoAuthPage.vue'
 import UserLoginPage from '@/components/UserLoginPage.vue'
 import UserManagerPage from '@/components/UserManagerPage.vue'
 import UserRegisterPage from '@/components/UserRegisterPage.vue'
@@ -8,16 +9,25 @@ export const routes = [
     path: '/',
     name: 'home',
     component: HomeView,
+    meta: {
+      notLogin: true,
+    },
   },
   {
     path: '/user/login',
     name: 'login',
     component: UserLoginPage,
+    meta: {
+      notLogin: true,
+    },
   },
   {
     path: '/user/register',
     name: 'register',
     component: UserRegisterPage,
+    meta: {
+      notLogin: true,
+    },
   },
   {
     path: '/admin/user/manage',
@@ -28,5 +38,13 @@ export const routes = [
     path: '/about',
     name: 'about',
     component: () => import('../views/AboutView.vue'),
+  },
+  {
+    path: '/noauth',
+    name: 'noauth',
+    component: NoAuthPage,
+    meta: {
+      notLogin: true,
+    },
   },
 ]
