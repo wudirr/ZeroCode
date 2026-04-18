@@ -96,16 +96,14 @@ export async function registerUser(
   })
 }
 
-/** 此处后端没有提供注释 DELETE /user/remove/${param0} */
-export async function remove(
-  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
-  params: API.removeParams,
-  options?: { [key: string]: any }
-) {
-  const { id: param0, ...queryParams } = params
-  return request<boolean>(`/user/remove/${param0}`, {
+/** 此处后端没有提供注释 DELETE /user/remove */
+export async function remove(body: API.DeleteRequest, options?: { [key: string]: any }) {
+  return request<API.ResultBoolean>('/user/remove', {
     method: 'DELETE',
-    params: { ...queryParams },
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
     ...(options || {}),
   })
 }
