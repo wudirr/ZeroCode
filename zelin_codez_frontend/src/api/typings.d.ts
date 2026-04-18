@@ -1,4 +1,8 @@
 declare namespace API {
+  type DeleteRequest = {
+    id?: number
+  }
+
   type getInfoParams = {
     id: number
   }
@@ -14,10 +18,6 @@ declare namespace API {
     totalPage?: number
     totalRow?: number
     optimizeCountQuery?: boolean
-  }
-
-  type removeParams = {
-    id: number
   }
 
   type ResultBoolean = {
@@ -99,6 +99,7 @@ declare namespace API {
     userAccount?: string
     userName?: string
     userAvatar?: string
+    userRole?: string
     userProfile?: string
   }
 
