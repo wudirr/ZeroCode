@@ -25,7 +25,10 @@
           <div v-if="userLoginStore.loginUser.id">
             <a-space>
               <a-dropdown placement="bottom" arrow>
-                <a-avatar :src="(userLoginStore.loginUser as API.UserQueryVO).userAvatar" size="large" />
+                <a-avatar
+                  :src="(userLoginStore.loginUser as API.UserQueryVO).userAvatar"
+                  size="large"
+                />
                 <template #overlay>
                   <a-menu>
                     <a-menu-item @click="toPersonalCenter">
@@ -74,7 +77,6 @@ router.afterEach((to, from, next) => {
 })
 //引入全局登录登录状态
 const userLoginStore = useUserLoginStore()
-userLoginStore.fetchLoginUser()
 // 菜单配置项
 const menuItems = ref([
   {
