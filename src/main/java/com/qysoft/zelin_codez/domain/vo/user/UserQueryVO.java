@@ -36,6 +36,11 @@ public class UserQueryVO implements Serializable{
     private String userAvatar;
 
     /**
+     * 用户角色
+     */
+    private String userRole;
+
+    /**
      * 用户简介
      */
     private String userProfile;

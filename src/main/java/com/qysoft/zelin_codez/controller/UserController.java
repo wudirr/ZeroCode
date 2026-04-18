@@ -1,6 +1,7 @@
 package com.qysoft.zelin_codez.controller;
 
 import com.mybatisflex.core.paginate.Page;
+import com.qysoft.zelin_codez.common.DeleteRequest;
 import com.qysoft.zelin_codez.common.PageRequest;
 import com.qysoft.zelin_codez.common.Result;
 import com.qysoft.zelin_codez.common.annotation.AuthCheck;
@@ -18,17 +19,11 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.qysoft.zelin_codez.domain.entity.User;
 import com.qysoft.zelin_codez.service.UserService;
-import org.springframework.web.bind.annotation.RestController;
+
 import java.util.List;
 
 /**
@@ -118,16 +113,16 @@ public class UserController {
     /**
      * 根据主键删除用户。
      *
-     * @param id 主键
+     * @param deleteRequest 主键
      * @return {@code true} 删除成功，{@code false} 删除失败
      */
-    @DeleteMapping("remove/{id}")
+    @DeleteMapping("remove")
     @AuthCheck(mustRole = "admin")
-    public boolean remove(@PathVariable Long id) {
+    public Result<Boolean> remove(@RequestBody DeleteRequest deleteRequest) {
         //查询用户
-        User user = userService.getById(id);
+        User user = userService.getById(deleteRequest.getId());
         ThrowUtils.throwIf(user == null || user.getId() < 0, ErrorCode.NOT_FOUND_ERROR, "用户存在");
-        return userService.removeById(id);
+        return Result.success(userService.removeById(deleteRequest.getId()));
     }
 
     /**
@@ -207,8 +202,10 @@ public class UserController {
         int pageSize = userQueryRequest.getPageSize();
         //防止爬虫
         ThrowUtils.throwIf(pageSize >= 30, ErrorCode.FORBIDDEN_ERROR);
-        Page<User> userPage = userService.page(new Page<User>(), userService.getQueryWrapper(userQueryRequest));
+        Page<User> userPage = userService.page(new Page<>(), userService.getQueryWrapper(userQueryRequest));
         Page<UserVO> userVOPage = new Page<>(pageNum,pageSize);
+        userVOPage.setTotalPage(userPage.getTotalPage());
+        userVOPage.setTotalRow(userPage.getTotalRow());
         userVOPage.setRecords(userService.getUserVOList(userPage.getRecords()));
         return Result.success(userVOPage);
     }
