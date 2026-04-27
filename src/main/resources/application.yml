@@ -8,6 +8,8 @@ spring:
     username: root
     # 数据库密码
     password: 111111
+  profiles:
+    active: local
 server:
   port: 8123
   servlet:
