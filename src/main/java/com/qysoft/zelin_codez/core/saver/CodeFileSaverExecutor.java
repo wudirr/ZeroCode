@@ -14,7 +14,7 @@ import java.io.File;
  * @Author wudi
  * @Date 2026/4/27 15:48
  **/
-public class CodeSaverExecutor {
+public class CodeFileSaverExecutor {
 
     private static final CodeFileSaverTemplate<HtmlCodeResult> HTML_CODE_SAVER = new HtmlCodeSaver();
 
