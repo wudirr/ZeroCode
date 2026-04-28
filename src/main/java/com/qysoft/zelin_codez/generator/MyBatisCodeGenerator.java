@@ -18,7 +18,7 @@ import static com.fasterxml.jackson.databind.type.LogicalType.Map;
  **/
 public class MyBatisCodeGenerator {
 
-    public static final String[] TABLES = {"user"};
+    public static final String[] TABLES = {"app"};
     public static void main(String[] args) {
         //获取数据库配置信息
         Dict dict = YamlUtil.loadByPath("application.yml");

@@ -49,7 +49,7 @@ public class GlobalExceptionHandler {
     public Result<?> lombokException(MethodArgumentNotValidException e) {
         BindingResult bindingResult = e.getBindingResult();
         List<ObjectError> objectErrors = bindingResult.getAllErrors();
-        return Result.error(500, objectErrors.getFirst().getDefaultMessage());
+        return Result.error(500, objectErrors.get(0).getDefaultMessage());
     }
 }
 
