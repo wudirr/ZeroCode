@@ -25,7 +25,9 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -244,6 +246,24 @@ public class AppController {
         appVOPage.setRecords(appService.getAppVOList(appPage.getRecords()));
         return Result.success(appVOPage);
     }
+
+    /**
+     * 聊天生成应用并且保存代码接口
+     *
+     * @param userMessage 用户消息
+     * @param appId 应用编号
+     * @param httpServletRequest http请求对象
+     * @return 流式输出
+     */
+    @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> chat2GenCode(@RequestParam String userMessage, @RequestParam Long appId, HttpServletRequest httpServletRequest) {
+        //参数校验
+        ThrowUtils.throwIf(StringUtils.isBlank(userMessage), ErrorCode.PARAMS_ERROR, "用户输入不能为空");
+        ThrowUtils.throwIf(appId == null || appId < 0, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        return appService.chat2GenCode(userMessage, appId, loginUser);
+    }
+
 
     /**
      * 校验应用名称
