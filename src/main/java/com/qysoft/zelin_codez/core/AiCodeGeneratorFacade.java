@@ -5,14 +5,13 @@ import com.qysoft.zelin_codez.ai.model.HtmlCodeResult;
 import com.qysoft.zelin_codez.ai.model.MultiFileCodeResult;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.core.parser.CodeParserExecutor;
-import com.qysoft.zelin_codez.core.saver.CodeSaverExecutor;
+import com.qysoft.zelin_codez.core.saver.CodeFileSaverExecutor;
 import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -42,11 +41,11 @@ public class AiCodeGeneratorFacade {
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 HtmlCodeResult result = aiCodeGeneratorService.generateHtmlCode(userMessage);
-                yield CodeSaverExecutor.saveCode(result, CodeGenTypeEnum.HTML);
+                yield CodeFileSaverExecutor.saveCode(result, CodeGenTypeEnum.HTML);
             }
             case MULTI_FILE -> {
                 MultiFileCodeResult result = aiCodeGeneratorService.generateMultiFileCode(userMessage);
-                yield CodeSaverExecutor.saveCode(result, CodeGenTypeEnum.MULTI_FILE);
+                yield CodeFileSaverExecutor.saveCode(result, CodeGenTypeEnum.MULTI_FILE);
             }
             default -> throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的代码生成类型");
         };
@@ -75,7 +74,7 @@ public class AiCodeGeneratorFacade {
                 String content = stringBuilder.toString();
                 Object codeResult = CodeParserExecutor.coderParser(content,codeGenTypeEnum);
                 //保存代码
-                File file = CodeSaverExecutor.saveCode(codeResult,codeGenTypeEnum);
+                File file = CodeFileSaverExecutor.saveCode(codeResult,codeGenTypeEnum);
                 log.info("保存html文件成功,文件路径:{}", file.getAbsolutePath());
             } catch (Exception e) {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件保存失败");
