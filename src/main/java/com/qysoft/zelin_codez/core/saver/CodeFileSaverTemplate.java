@@ -3,6 +3,7 @@ package com.qysoft.zelin_codez.core.saver;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import com.qysoft.zelin_codez.common.constant.AppConstant;
 import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 
@@ -16,7 +17,7 @@ import java.nio.charset.StandardCharsets;
  **/
 public abstract class CodeFileSaverTemplate<T> {
 
-    protected static final String FILE_SAVER_ROOT_DIR = System.getProperty("user.dir") + File.separator + "tmp" + File.separator + "code_output";
+    protected static final String FILE_SAVER_ROOT_DIR = AppConstant.CODE_OUTPUT_ROOT_DIR;
 
     /**
      * 代码文件保存
@@ -24,11 +25,11 @@ public abstract class CodeFileSaverTemplate<T> {
      * @param t 代码生成结果
      * @return 文件
      */
-    protected final File codeFileSaver(T t){
+    protected final File codeFileSaver(T t,Long appId){
         //校验参数
         validCodeResult(t);
         //构建唯一目录
-        String dirName = buildUniqueDir(getCodeGenType());
+        String dirName = buildUniqueDir(getCodeGenType(),appId);
         //保存代码文件
         saveCodeResult(t,dirName);
         return new File(dirName);
@@ -56,8 +57,8 @@ public abstract class CodeFileSaverTemplate<T> {
      * @param codeGenType 代码生成类型
      * @return 文件目录
      */
-    protected final String buildUniqueDir(String codeGenType) {
-        String uniqueDirName = StrUtil.format("{}_{}",codeGenType, IdUtil.getSnowflakeNextIdStr());
+    protected final String buildUniqueDir(String codeGenType,Long appId) {
+        String uniqueDirName = StrUtil.format("{}_{}",codeGenType, appId.toString());
         String dirName = FILE_SAVER_ROOT_DIR + File.separator + uniqueDirName;
         FileUtil.mkdir(dirName);
         return dirName;

@@ -10,10 +10,7 @@ import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.common.enums.UserRoleEnum;
 import com.qysoft.zelin_codez.domain.entity.App;
 import com.qysoft.zelin_codez.domain.entity.User;
-import com.qysoft.zelin_codez.domain.form.app.AppAddRequest;
-import com.qysoft.zelin_codez.domain.form.app.AppEditRequest;
-import com.qysoft.zelin_codez.domain.form.app.AppQueryRequest;
-import com.qysoft.zelin_codez.domain.form.app.AppUpdateRequest;
+import com.qysoft.zelin_codez.domain.form.app.*;
 import com.qysoft.zelin_codez.domain.vo.app.AppVO;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
@@ -25,7 +22,10 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -148,7 +148,7 @@ public class AppController {
         appQueryRequest.setUserId(loginUser.getId());
         int pageNum = appQueryRequest.getPageNum();
         Page<App> appPage = appService.page(new Page<>(pageNum, pageSize), appService.getQueryWrapper(appQueryRequest));
-        Page<AppVO> appVOPage = new Page<>(pageNum, pageSize,appPage.getTotalRow());
+        Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
         appVOPage.setRecords(appService.getAppVOList(appPage.getRecords()));
         return Result.success(appVOPage);
     }
@@ -171,7 +171,7 @@ public class AppController {
         // 精选应用按优先级降序排列
         queryWrapper.orderBy("priority", false);
         Page<App> appPage = appService.page(new Page<>(pageNum, pageSize), queryWrapper);
-        Page<AppVO> appVOPage = new Page<>(pageNum, pageSize,appPage.getTotalRow());
+        Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
         appVOPage.setTotalPage(appPage.getTotalPage());
         appVOPage.setRecords(appService.getAppVOList(appPage.getRecords()));
         return Result.success(appVOPage);
@@ -243,6 +243,37 @@ public class AppController {
         appVOPage.setTotalRow(appPage.getTotalRow());
         appVOPage.setRecords(appService.getAppVOList(appPage.getRecords()));
         return Result.success(appVOPage);
+    }
+
+    /**
+     * 生成AI应用接口
+     *
+     * @param appId 应用Id
+     * @param userMessage 用户消息
+     * @param httpServletRequest 请求封装类
+     * @return 流式输出
+     */
+    @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId, @RequestParam String userMessage, HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(appId == null || appId < 0, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(StringUtils.isBlank(userMessage), ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        return appService.chatToGenCode(appId, userMessage, loginUser);
+    }
+
+    /**
+     * 部署应用
+     *
+     * @param appDeployRequest 应用部署请求
+     * @param httpServletRequest 请求封装类
+     * @return 部署地址
+     */
+    @PostMapping("/deploy")
+    public Result<String> deployApp(@RequestBody AppDeployRequest appDeployRequest,HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(appDeployRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        ThrowUtils.throwIf(loginUser == null || loginUser.getId() <= 0, ErrorCode.NOT_LOGIN_ERROR);
+        return Result.success(appService.deployApp(appDeployRequest, loginUser));
     }
 
     /**

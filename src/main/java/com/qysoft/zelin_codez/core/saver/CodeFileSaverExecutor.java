@@ -27,11 +27,11 @@ public class CodeFileSaverExecutor {
      * @param codeGenTypeEnum 代码生成类型
      * @return 文件
      */
-    public static File saveCode(Object codeResult, CodeGenTypeEnum codeGenTypeEnum) {
+    public static File saveCode(Object codeResult, CodeGenTypeEnum codeGenTypeEnum,Long appId) {
         ThrowUtils.throwIf(codeResult == null || codeGenTypeEnum == null, ErrorCode.PARAMS_ERROR);
         return switch (codeGenTypeEnum) {
-            case HTML -> HTML_CODE_SAVER.codeFileSaver((HtmlCodeResult) codeResult);
-            case MULTI_FILE -> MULTI_FILE_CODE_SAVER.codeFileSaver((MultiFileCodeResult) codeResult);
+            case HTML -> HTML_CODE_SAVER.codeFileSaver((HtmlCodeResult) codeResult,appId);
+            case MULTI_FILE -> MULTI_FILE_CODE_SAVER.codeFileSaver((MultiFileCodeResult) codeResult,appId);
             default -> throw new BusinessException(ErrorCode.PARAMS_ERROR);
         };
     }
