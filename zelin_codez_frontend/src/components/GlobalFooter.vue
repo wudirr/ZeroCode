@@ -21,18 +21,24 @@
 
 <style scoped>
 .footer {
-  background: #efefef;
+  background: transparent;
   text-align: center;
   padding: 20px;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
 }
 
 .copyright {
   margin: 0;
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
   font-size: 14px;
+}
+
+.author-link {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.author-link:hover {
+  color: #fff;
 }
 </style>

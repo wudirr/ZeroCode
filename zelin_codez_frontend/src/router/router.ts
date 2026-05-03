@@ -3,6 +3,7 @@ import UserLoginPage from '@/components/UserLoginPage.vue'
 import UserManagerPage from '@/components/UserManagerPage.vue'
 import UserRegisterPage from '@/components/UserRegisterPage.vue'
 import HomeView from '@/views/HomeView.vue'
+import ChatView from '@/views/ChatView.vue'
 
 export const routes = [
   {
@@ -38,6 +39,14 @@ export const routes = [
     path: '/about',
     name: 'about',
     component: () => import('../views/AboutView.vue'),
+  },
+  {
+    path: '/chat/:appId',
+    name: 'chat',
+    component: ChatView,
+    meta: {
+      notLogin: true,
+    },
   },
   {
     path: '/noauth',

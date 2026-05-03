@@ -136,8 +136,13 @@ const logout = async () => {
 
 <style scoped>
 .header {
-  background: #fff;
+  background: transparent !important;
   padding: 0 24px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 }
 
 .header-left {
@@ -154,7 +159,59 @@ const logout = async () => {
 .site-title {
   margin: 0;
   font-size: 18px;
-  color: #1890ff;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+:deep(.ant-menu) {
+  background: transparent !important;
+}
+
+:deep(.ant-menu-item) {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+:deep(.ant-menu-item:hover) {
+  color: #fff !important;
+}
+
+:deep(.ant-menu-item-selected) {
+  color: #fff !important;
+}
+
+:deep(.ant-menu-item-selected)::after {
+  border-bottom-color: #fff !important;
+}
+
+:deep(.ant-menu-dark .ant-menu-inline.ant-menu-sub) {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.user-login-status {
+  color: #fff;
+}
+
+:deep(.ant-btn-primary) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+:deep(.ant-btn-primary:hover) {
+  background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%) !important;
+}
+
+:deep(.ant-dropdown-menu) {
+  background: rgba(30, 41, 59, 0.95) !important;
+  backdrop-filter: blur(12px);
+}
+
+:deep(.ant-dropdown-menu-item) {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+:deep(.ant-dropdown-menu-item:hover) {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
 }
 
 .ant-menu-horizontal {
