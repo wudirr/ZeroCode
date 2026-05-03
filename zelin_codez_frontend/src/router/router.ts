@@ -1,6 +1,7 @@
 import NoAuthPage from '@/components/NoAuthPage.vue'
 import UserLoginPage from '@/components/UserLoginPage.vue'
 import UserManagerPage from '@/components/UserManagerPage.vue'
+import AppManagerPage from '@/components/AppManagerPage.vue'
 import UserRegisterPage from '@/components/UserRegisterPage.vue'
 import HomeView from '@/views/HomeView.vue'
 import ChatView from '@/views/ChatView.vue'
@@ -34,6 +35,11 @@ export const routes = [
     path: '/admin/user/manage',
     name: 'userManage',
     component: UserManagerPage,
+  },
+  {
+    path: '/admin/app/manage',
+    name: 'appManage',
+    component: AppManagerPage,
   },
   {
     path: '/about',

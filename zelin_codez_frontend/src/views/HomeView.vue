@@ -124,9 +124,6 @@
             <a-empty v-else description="暂无作品" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
           </div>
 
-          <!-- 分隔线 -->
-          <a-divider />
-
           <!-- 精选案例 -->
           <div class="content-block">
             <div class="section-header">
@@ -562,7 +559,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 50%, #80deea 100%);
   z-index: -1;
 }
 
@@ -570,14 +567,14 @@ onMounted(() => {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
-  opacity: 0.5;
+  opacity: 0.6;
   animation: float 20s ease-in-out infinite;
 }
 
 .orb-1 {
   width: 600px;
   height: 600px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
   top: -200px;
   left: -100px;
   animation-delay: 0s;
@@ -586,7 +583,7 @@ onMounted(() => {
 .orb-2 {
   width: 500px;
   height: 500px;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(120deg, #66ccff 0%, #99eeff 100%);
   bottom: -150px;
   right: -100px;
   animation-delay: -7s;
@@ -595,7 +592,7 @@ onMounted(() => {
 .orb-3 {
   width: 400px;
   height: 400px;
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(120deg, #4facfe 0%, #00f2fe 100%);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -630,9 +627,9 @@ onMounted(() => {
 .chat-title h1 {
   font-size: 48px;
   font-weight: 700;
-  color: #ffffff;
+  color: #1a1a2e;
   margin: 0 0 12px 0;
-  background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #2d3748 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -647,12 +644,12 @@ onMounted(() => {
   height: 48px;
   vertical-align: middle;
   border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(102, 204, 255, 0.3);
 }
 
 .subtitle {
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.6);
+  color: #4a5568;
   margin: 0 0 32px 0;
 }
 
@@ -662,11 +659,11 @@ onMounted(() => {
 }
 
 .input-box {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(102, 204, 255, 0.3);
   border-radius: 16px;
   padding: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(102, 204, 255, 0.15);
 }
 
 .input-content {
@@ -685,7 +682,7 @@ onMounted(() => {
 .input-icon {
   width: 24px;
   height: 24px;
-  color: rgba(255, 255, 255, 0.6);
+  color: #66ccff;
   flex-shrink: 0;
   margin-top: 4px;
 }
@@ -696,7 +693,7 @@ onMounted(() => {
   background: transparent;
   border: none;
   outline: none;
-  color: #fff;
+  color: #1a1a2e;
   font-size: 16px;
   line-height: 1.6;
   resize: vertical;
@@ -709,7 +706,7 @@ onMounted(() => {
 }
 
 .custom-textarea::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: #a0aec0;
 }
 
 .input-footer {
@@ -755,39 +752,39 @@ onMounted(() => {
 }
 
 .type-select :deep(.ant-select-selector) {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(102, 204, 255, 0.4) !important;
   border-radius: 12px !important;
-  color: #fff !important;
+  color: #1a1a2e !important;
 }
 
 .type-select :deep(.ant-select-selection-item) {
-  color: #fff !important;
+  color: #1a1a2e !important;
 }
 
 .type-select :deep(.ant-select-arrow) {
-  color: rgba(255, 255, 255, 0.5) !important;
+  color: #66ccff !important;
 }
 
 .type-select :deep(.ant-select-dropdown) {
-  background: rgba(30, 41, 59, 0.95) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
   backdrop-filter: blur(12px);
 }
 
 .type-select :deep(.ant-select-item) {
-  color: rgba(255, 255, 255, 0.85) !important;
+  color: #4a5568 !important;
 }
 
 .type-select :deep(.ant-select-item-option-active) {
-  background: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(102, 204, 255, 0.1) !important;
 }
 
 .type-select :deep(.ant-select-item-option-selected) {
-  background: rgba(102, 126, 234, 0.3) !important;
+  background: rgba(102, 204, 255, 0.2) !important;
 }
 
 .input-icon {
-  color: rgba(255, 255, 255, 0.5);
+  color: #66ccff;
 }
 
 .create-btn-circle {
@@ -795,7 +792,7 @@ onMounted(() => {
   height: 44px;
   padding: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
   border: none;
   display: flex;
   align-items: center;
@@ -804,17 +801,17 @@ onMounted(() => {
 
 .create-btn-circle:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 24px rgba(102, 204, 255, 0.4);
 }
 
 .create-btn-circle:has(.arrow-up-icon.active) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(120deg, #66ccff 0%, #99eeff 100%);
 }
 
 .arrow-up-icon {
   width: 20px;
   height: 20px;
-  color: #9ca3af;
+  color: #a0aec0;
   transition: color 0.3s ease;
 }
 
@@ -823,7 +820,7 @@ onMounted(() => {
 }
 
 .create-btn-circle:disabled {
-  background: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(160, 174, 192, 0.3) !important;
 }
 
 /* 推荐主题 */
@@ -837,7 +834,7 @@ onMounted(() => {
 }
 
 .recommend-topics .label {
-  color: rgba(255, 255, 255, 0.6);
+  color: #4a5568;
   font-size: 14px;
 }
 
@@ -848,17 +845,17 @@ onMounted(() => {
 }
 
 .topic-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(102, 204, 255, 0.3);
+  color: #4a5568;
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .topic-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: rgba(102, 204, 255, 0.2);
+  color: #1a1a2e;
   transform: translateY(-2px);
 }
 
@@ -877,21 +874,15 @@ onMounted(() => {
 }
 
 .section-card {
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(102, 204, 255, 0.2);
   border-radius: 20px;
   padding: 24px;
   min-height: 400px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px rgba(102, 204, 255, 0.1);
   width: 60%;
   margin: 0 auto;
   box-sizing: border-box;
-}
-
-.section-card :deep(.ant-divider) {
-  border-color: rgba(255, 255, 255, 0.15);
-  margin: 32px 0;
 }
 
 /* 统一卡片样式 */
@@ -904,26 +895,32 @@ onMounted(() => {
   border: none;
   border-radius: 12px;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  will-change: transform;
 }
 
 .app-item:hover .app-card {
   transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 20px rgba(102, 204, 255, 0.25);
 }
 
 .app-cover {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 10;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
   overflow: hidden;
+  will-change: opacity;
 }
 
 .app-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
+  display: block;
 }
 
 .app-cover .default-cover {
@@ -937,7 +934,7 @@ onMounted(() => {
 .app-cover .default-cover :deep(.icon-svg) {
   width: 40px;
   height: 40px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .card-overlay {
@@ -946,17 +943,29 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    visibility 0.15s ease;
 }
 
 .app-card:hover .card-overlay {
   opacity: 1;
+  visibility: visible;
+}
+
+.app-card:hover .card-overlay {
+  opacity: 1;
+  visibility: visible;
 }
 
 .app-info {
@@ -966,7 +975,7 @@ onMounted(() => {
 .app-info h3 {
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: #1a1a2e;
   margin: 6px 0 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -975,7 +984,7 @@ onMounted(() => {
 
 .app-info p {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #718096;
   margin: 0;
 }
 
@@ -988,7 +997,7 @@ onMounted(() => {
 
 .app-info .user-row span {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: #4a5568;
 }
 
 .section-header {
@@ -1001,18 +1010,18 @@ onMounted(() => {
 .section-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #fff;
+  color: #1a1a2e;
   margin: 0;
 }
 
 .section-icon {
   width: 24px;
   height: 24px;
-  color: #667eea;
+  color: #66ccff;
 }
 
 .section-icon.featured {
-  color: #f59e0b;
+  color: #84fab0;
 }
 
 /* 内容区块 */
@@ -1022,6 +1031,7 @@ onMounted(() => {
 
 .content-block:last-child {
   margin-bottom: 0;
+  margin-top: 40px;
 }
 
 .works-list {
@@ -1044,8 +1054,8 @@ onMounted(() => {
 }
 
 .work-card {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(102, 204, 255, 0.2);
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
@@ -1054,7 +1064,7 @@ onMounted(() => {
 
 .work-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(102, 204, 255, 0.3);
 }
 
 .work-cover {
@@ -1063,7 +1073,7 @@ onMounted(() => {
   aspect-ratio: 16 / 10;
   border-radius: 8px;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
 }
 
 .work-cover img {
@@ -1083,7 +1093,7 @@ onMounted(() => {
 .work-cover .default-cover :deep(.icon-svg) {
   width: 40px;
   height: 40px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .work-actions-overlay {
@@ -1092,7 +1102,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(102, 204, 255, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1111,7 +1121,7 @@ onMounted(() => {
 .work-info h3 {
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: #1a1a2e;
   margin: 0 0 4px 0;
   white-space: nowrap;
   overflow: hidden;
@@ -1120,7 +1130,7 @@ onMounted(() => {
 
 .work-info .create-time {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #718096;
   margin: 0;
 }
 
@@ -1132,23 +1142,27 @@ onMounted(() => {
 }
 
 .featured-card {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(102, 204, 255, 0.2);
   border-radius: 12px;
   overflow: hidden;
-  transition: all 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  will-change: transform;
 }
 
 .featured-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 16px rgba(102, 204, 255, 0.25);
 }
 
 .featured-cover {
   position: relative;
   aspect-ratio: 1;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
   overflow: hidden;
+  will-change: opacity;
 }
 
 .featured-cover img {
@@ -1168,7 +1182,7 @@ onMounted(() => {
 .featured-cover .default-cover :deep(.icon-svg) {
   width: 48px;
   height: 48px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .featured-actions {
@@ -1177,17 +1191,29 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    visibility 0.15s ease;
 }
 
 .featured-card:hover .featured-actions {
   opacity: 1;
+  visibility: visible;
+}
+
+.featured-card:hover .featured-actions {
+  opacity: 1;
+  visibility: visible;
 }
 
 .featured-info {
@@ -1203,13 +1229,13 @@ onMounted(() => {
 
 .featured-info .user-name {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: #4a5568;
 }
 
 .featured-info h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
+  color: #1a1a2e;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -1268,34 +1294,41 @@ onMounted(() => {
   vertical-align: middle;
 }
 
-/* Ant Design 组件暗色适配 */
+/* Ant Design 组件浅色适配 */
 .home-view :deep(.ant-empty-description) {
-  color: rgba(255, 255, 255, 0.6);
+  color: #4a5568;
 }
 
 .home-view :deep(.ant-btn-primary) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(102, 204, 255, 0.5);
+  box-shadow: 0 2px 8px rgba(102, 204, 255, 0.2);
+  color: #1a1a2e;
+  font-weight: 600;
 }
 
 .home-view :deep(.ant-btn-primary:hover) {
-  background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%) !important;
+  background: #fff !important;
+  border-color: #66ccff !important;
+}
+
+.home-view :deep(.ant-btn-primary:hover) {
+  background: linear-gradient(120deg, #5bb8e6 0%, #7dccf2 100%) !important;
 }
 
 .home-view :deep(.ant-btn-default) {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(102, 204, 255, 0.4);
+  color: #4a5568;
 }
 
 .home-view :deep(.ant-btn-default:hover) {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #fff;
+  background: rgba(102, 204, 255, 0.15);
+  border-color: rgba(102, 204, 255, 0.6);
+  color: #1a1a2e;
 }
 
 .home-view :deep(.ant-avatar) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
 }
 </style>
