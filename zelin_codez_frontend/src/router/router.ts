@@ -52,6 +52,7 @@ export const routes = [
     component: ChatView,
     meta: {
       notLogin: true,
+      hideHeader: true,
     },
   },
   {
