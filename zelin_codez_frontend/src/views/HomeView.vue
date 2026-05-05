@@ -107,7 +107,7 @@
                         <AppstoreIcon />
                       </div>
                       <div class="card-overlay">
-                        <a-button type="primary" @click.stop="goToChat(app.id)">
+                        <a-button type="primary" @click.stop="goToChat(app.id as any)">
                           <template #icon><MessageIcon /></template>
                           查看对话
                         </a-button>
