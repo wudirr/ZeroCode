@@ -92,9 +92,12 @@
               <p v-if="!message.isMarkdown">{{ message.content }}</p>
               <MarkdownRenderer v-if="message.isMarkdown" :content="message.content" />
               <div v-if="message.isThinking" class="thinking">
-                <div class="dot"></div>
-                <div class="dot"></div>
-                <div class="dot"></div>
+                <span class="thinking-text">{{ thinkingText }}</span>
+                <div class="dots">
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -204,6 +207,8 @@ const pendingText = ref<string>('')
 const isPageVisible = ref<boolean>(true)
 const isAtBottom = ref(true)
 const SCROLL_THRESHOLD = 50
+const thinkingText = ref<string>('')
+let thinkingTimeout: any = null
 
 const showAppDetailModal = ref<boolean>(false)
 const showDeployModal = ref<boolean>(false)
@@ -340,6 +345,12 @@ const sendPromptToAI = async (userMessage: string) => {
   isThinking.value = true
   userInput.value = ''
 
+  // 启动思考文字，1分钟后切换
+  thinkingText.value = '思考中, 请稍候...'
+  thinkingTimeout = setTimeout(() => {
+    thinkingText.value = '因网络原因可能会出现延迟...'
+  }, 60000)
+
   await nextTick()
   scrollToBottom()
 
@@ -435,6 +446,13 @@ const sendPromptToAI = async (userMessage: string) => {
       aiMessage.content +=
         '\n\n代码已生成，现在为您显示预览页面。点击【部署】按钮可将应用部署到生产环境。'
     }
+
+    // 清除思考文字
+    if (thinkingTimeout) {
+      clearTimeout(thinkingTimeout)
+      thinkingTimeout = null
+    }
+    thinkingText.value = ''
 
     currentMarkdownId.value = -1
   }
@@ -711,8 +729,19 @@ onUnmounted(() => {
 
 .thinking {
   display: flex;
-  gap: 4px;
+  flex-direction: column-reverse;
   align-items: center;
+  gap: 8px;
+}
+
+.thinking-text {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.dots {
+  display: flex;
+  gap: 4px;
 }
 
 .dot {
@@ -740,6 +769,16 @@ onUnmounted(() => {
 
   40% {
     transform: scale(1);
+  }
+}
+
+@keyframes fadeInOut {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
