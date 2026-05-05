@@ -188,6 +188,8 @@ const route = useRoute()
 const router = useRouter()
 const userLoginStore = useUserLoginStore()
 
+const isView = route.query.isView === '1'
+
 const BACKEND_BASE_URL = 'http://localhost:8123'
 const appId = ref<string>(route.params.appId as string)
 const appDetail = ref<API.AppVO>({})
@@ -239,9 +241,13 @@ const cancelDelete = () => {
 
 const deleteAppFunc = async () => {
   try {
-    await deleteAppApi({ id: parseInt(appId.value) })
-    message.success('删除成功')
-    router.push('/')
+    const res = await deleteAppApi({ id: appId.value as any })
+    if (res.code === 200 && res.data) {
+      message.success('删除成功')
+      router.push('/')
+    } else {
+      message.error('删除失败，请重试')
+    }
   } catch (error) {
     message.error('删除失败，请重试')
   }
@@ -308,21 +314,19 @@ const handleScroll = () => {
   isAtBottom.value = checkIsAtBottom()
 }
 
-const sendMessage = async () => {
-  if (!userInput.value.trim()) return
-
-  const userMessage = userInput.value.trim()
-
+// 公共的发送消息给 AI 的函数
+const sendPromptToAI = async (userMessage: string) => {
   // 每次发送前清空待处理文本
   pendingText.value = ''
 
+  // 创建用户消息
   messages.value.push({
     id: messageId.value++,
     sender: 'user',
     content: userMessage,
   })
 
-  // 创建 AI 消息，确保有正确的 id
+  // 创建 AI 消息确保有正确的 id
   const aiMsgId = messageId.value++
   messages.value.push({
     id: aiMsgId,
@@ -352,25 +356,19 @@ const sendMessage = async () => {
   const appendText = async (text: string) => {
     if (!text) return
     if (isPageVisible.value) {
-      // 加强查找条件，确保找到正确的消息
       const aiMessage = messages.value.find(
         (msg) =>
           msg.id === currentMarkdownId.value && msg.sender === 'ai' && msg.isMarkdown === true,
       )
       if (aiMessage) {
-        // 关闭思考状态
         if (aiMessage.isThinking) {
           aiMessage.isThinking = false
         }
         aiMessage.content += text
         await nextTick()
-        // 智能滚动：当用户位于底部时自动滚动
         scrollToBottom()
-      } else {
-        console.warn('未找到正确的AI消息，currentMarkdownId:', currentMarkdownId.value)
       }
     } else {
-      // 页面不可见时累积待处理文本
       pendingText.value += text
     }
   }
@@ -382,7 +380,6 @@ const sendMessage = async () => {
       closeSource()
       return
     }
-
     try {
       const parsed = JSON.parse(event.data)
       const text = parsed.d ?? parsed.content ?? event.data
@@ -426,28 +423,34 @@ const sendMessage = async () => {
     }
     isThinking.value = false
 
-    // 先查找消息（此时 currentMarkdownId 还未被重置）
     const aiMessage = messages.value.find(
       (msg) => msg.isMarkdown && msg.sender === 'ai' && msg.id === currentMarkdownId.value,
     )
 
     if (aiMessage && aiMessage.content) {
-      // 根据应用配置的代码生成类型构建预览URL
       const generationType = appDetail.value.codeGenType || 'html'
       const deployKey = `${generationType}_${appId.value}`
       previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/`
       previewVersion.value++
-
-      // 将提示信息追加到AI消息末尾
       aiMessage.content +=
         '\n\n代码已生成，现在为您显示预览页面。点击【部署】按钮可将应用部署到生产环境。'
     }
 
-    // 最后才重置 currentMarkdownId
     currentMarkdownId.value = -1
   }
 
   await waitForDone()
+}
+
+// 自动发送初始提示词
+const sendInitialPrompt = async (initPrompt: string) => {
+  await sendPromptToAI(initPrompt)
+}
+
+// 用户发送消息
+const sendMessage = async () => {
+  if (!userInput.value.trim()) return
+  await sendPromptToAI(userInput.value.trim())
 }
 
 const updatePendingText = async () => {
@@ -483,16 +486,27 @@ onMounted(async () => {
     const res = await getApp({ id: appId.value as any })
     appDetail.value = (res.data as API.AppVO) || {}
 
-    // Initial messages
-    messages.value.push({
-      id: messageId.value++,
-      sender: 'ai',
-      isMarkdown: true,
-      content: `欢迎使用AI对话！初始提示：${appDetail.value.initPrompt}`,
-    })
+    if (isView) {
+      // 查看模式：直接显示预览页面，不自动发送
+      // deployKey 可能不存在，需要根据 generationType 和 appId 构建
+      const generationType = appDetail.value.codeGenType || 'html'
+      const deployKey = `${generationType}_${appId.value}`
+      previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/`
+      previewVersion.value++
+
+      // 显示欢迎消息
+      messages.value.push({
+        id: messageId.value++,
+        sender: 'ai',
+        isMarkdown: true,
+        content: `欢迎回来！这是您之前创建的应用。点击预览区域右上角的【新窗口】可在新页面查看。`,
+      })
+    } else {
+      // 新建模式：自动发送初始提示词给 AI
+      await sendInitialPrompt(appDetail.value.initPrompt as any)
+    }
 
     await nextTick()
-    scrollToBottom()
   } catch (error) {
     message.error('获取应用详情失败')
   }
@@ -670,8 +684,7 @@ onUnmounted(() => {
 }
 
 .message.user .message-content {
-  background: #86efac;
-  color: #166534;
+  background: #bfdbfe;
 }
 
 .message.user {
