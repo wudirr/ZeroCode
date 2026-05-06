@@ -92,12 +92,9 @@
               <p v-if="!message.isMarkdown">{{ message.content }}</p>
               <MarkdownRenderer v-if="message.isMarkdown" :content="message.content" />
               <div v-if="message.isThinking" class="thinking">
-                <span class="thinking-text">{{ thinkingText }}</span>
-                <div class="dots">
-                  <div class="dot"></div>
-                  <div class="dot"></div>
-                  <div class="dot"></div>
-                </div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
               </div>
             </div>
           </div>
@@ -134,22 +131,6 @@
             </svg>
             应用详情
           </button>
-          <button @click="openInNewWindow" class="btn-secondary">
-            <svg
-              class="btn-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4v6h0m-3 8v6m-4-4h6"
-              />
-            </svg>
-            新窗口
-          </button>
           <button @click="deployAppAction" class="btn-primary">
             <svg
               class="btn-icon"
@@ -185,13 +166,10 @@ import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { getApp, deployApp, deleteApp as deleteAppApi } from '@/api/appController'
 import { useUserLoginStore } from '@/stores/UserLoginStore'
-import { message } from 'ant-design-vue'
 
 const route = useRoute()
 const router = useRouter()
 const userLoginStore = useUserLoginStore()
-
-const isView = route.query.isView === '1'
 
 const BACKEND_BASE_URL = 'http://localhost:8123'
 const appId = ref<string>(route.params.appId as string)
@@ -207,8 +185,6 @@ const pendingText = ref<string>('')
 const isPageVisible = ref<boolean>(true)
 const isAtBottom = ref(true)
 const SCROLL_THRESHOLD = 50
-const thinkingText = ref<string>('')
-let thinkingTimeout: any = null
 
 const showAppDetailModal = ref<boolean>(false)
 const showDeployModal = ref<boolean>(false)
@@ -231,7 +207,8 @@ const closeAppDetailModal = () => {
 }
 
 const editApp = () => {
-  message.info('修改功能正在开发中...')
+  // 跳转到修改页面，稍后实现
+  alert('修改功能稍后实现')
   closeAppDetailModal()
 }
 
@@ -246,22 +223,18 @@ const cancelDelete = () => {
 
 const deleteAppFunc = async () => {
   try {
-    const res = await deleteAppApi({ id: appId.value as any })
-    if (res.code === 200 && res.data) {
-      message.success('删除成功')
-      router.push('/')
-    } else {
-      message.error('删除失败，请重试')
-    }
+    await deleteAppApi({ id: parseInt(appId.value) })
+    alert('删除成功')
+    router.push('/')
   } catch (error) {
-    message.error('删除失败，请重试')
+    alert('删除失败')
   }
   showDeleteConfirm.value = false
 }
 
 const deployAppAction = async () => {
   if (!previewUrl.value) {
-    message.warning('请先生成代码')
+    alert('请先生成代码')
     return
   }
   try {
@@ -275,7 +248,7 @@ const deployAppAction = async () => {
     }
     showDeployModal.value = true
   } catch (error) {
-    message.error('部署失败，请重试')
+    alert('部署失败')
   }
 }
 
@@ -287,7 +260,7 @@ const copyDeployUrl = () => {
   if (deployUrlInput.value) {
     deployUrlInput.value.select()
     document.execCommand('copy')
-    message.success('地址已复制到剪贴板')
+    alert('地址已复制')
   }
 }
 
@@ -295,7 +268,7 @@ const openInNewWindow = () => {
   if (previewUrl.value) {
     window.open(previewUrl.value, '_blank')
   } else {
-    message.warning('请先生成代码后在预览页面查看效果')
+    alert('请先部署应用')
   }
 }
 
@@ -319,19 +292,21 @@ const handleScroll = () => {
   isAtBottom.value = checkIsAtBottom()
 }
 
-// 公共的发送消息给 AI 的函数
-const sendPromptToAI = async (userMessage: string) => {
+const sendMessage = async () => {
+  if (!userInput.value.trim()) return
+
+  const userMessage = userInput.value.trim()
+
   // 每次发送前清空待处理文本
   pendingText.value = ''
 
-  // 创建用户消息
   messages.value.push({
     id: messageId.value++,
     sender: 'user',
     content: userMessage,
   })
 
-  // 创建 AI 消息确保有正确的 id
+  // 创建 AI 消息，确保有正确的 id
   const aiMsgId = messageId.value++
   messages.value.push({
     id: aiMsgId,
@@ -344,12 +319,6 @@ const sendPromptToAI = async (userMessage: string) => {
 
   isThinking.value = true
   userInput.value = ''
-
-  // 启动思考文字，1分钟后切换
-  thinkingText.value = '思考中, 请稍候...'
-  thinkingTimeout = setTimeout(() => {
-    thinkingText.value = '因网络原因可能会出现延迟...'
-  }, 60000)
 
   await nextTick()
   scrollToBottom()
@@ -367,19 +336,25 @@ const sendPromptToAI = async (userMessage: string) => {
   const appendText = async (text: string) => {
     if (!text) return
     if (isPageVisible.value) {
+      // 加强查找条件，确保找到正确的消息
       const aiMessage = messages.value.find(
         (msg) =>
           msg.id === currentMarkdownId.value && msg.sender === 'ai' && msg.isMarkdown === true,
       )
       if (aiMessage) {
+        // 关闭思考状态
         if (aiMessage.isThinking) {
           aiMessage.isThinking = false
         }
         aiMessage.content += text
         await nextTick()
+        // 智能滚动：当用户位于底部时自动滚动
         scrollToBottom()
+      } else {
+        console.warn('未找到正确的AI消息，currentMarkdownId:', currentMarkdownId.value)
       }
     } else {
+      // 页面不可见时累积待处理文本
       pendingText.value += text
     }
   }
@@ -391,6 +366,7 @@ const sendPromptToAI = async (userMessage: string) => {
       closeSource()
       return
     }
+
     try {
       const parsed = JSON.parse(event.data)
       const text = parsed.d ?? parsed.content ?? event.data
@@ -434,41 +410,28 @@ const sendPromptToAI = async (userMessage: string) => {
     }
     isThinking.value = false
 
+    // 先查找消息（此时 currentMarkdownId 还未被重置）
     const aiMessage = messages.value.find(
       (msg) => msg.isMarkdown && msg.sender === 'ai' && msg.id === currentMarkdownId.value,
     )
 
     if (aiMessage && aiMessage.content) {
+      // 根据应用配置的代码生成类型构建预览URL
       const generationType = appDetail.value.codeGenType || 'html'
       const deployKey = `${generationType}_${appId.value}`
       previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/`
       previewVersion.value++
+
+      // 将提示信息追加到AI消息末尾
       aiMessage.content +=
         '\n\n代码已生成，现在为您显示预览页面。点击【部署】按钮可将应用部署到生产环境。'
     }
 
-    // 清除思考文字
-    if (thinkingTimeout) {
-      clearTimeout(thinkingTimeout)
-      thinkingTimeout = null
-    }
-    thinkingText.value = ''
-
+    // 最后才重置 currentMarkdownId
     currentMarkdownId.value = -1
   }
 
   await waitForDone()
-}
-
-// 自动发送初始提示词
-const sendInitialPrompt = async (initPrompt: string) => {
-  await sendPromptToAI(initPrompt)
-}
-
-// 用户发送消息
-const sendMessage = async () => {
-  if (!userInput.value.trim()) return
-  await sendPromptToAI(userInput.value.trim())
 }
 
 const updatePendingText = async () => {
@@ -504,29 +467,18 @@ onMounted(async () => {
     const res = await getApp({ id: appId.value as any })
     appDetail.value = (res.data as API.AppVO) || {}
 
-    if (isView) {
-      // 查看模式：直接显示预览页面，不自动发送
-      // deployKey 可能不存在，需要根据 generationType 和 appId 构建
-      const generationType = appDetail.value.codeGenType || 'html'
-      const deployKey = `${generationType}_${appId.value}`
-      previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/`
-      previewVersion.value++
-
-      // 显示欢迎消息
-      messages.value.push({
-        id: messageId.value++,
-        sender: 'ai',
-        isMarkdown: true,
-        content: `欢迎回来！这是您之前创建的应用。点击预览区域右上角的【新窗口】可在新页面查看。`,
-      })
-    } else {
-      // 新建模式：自动发送初始提示词给 AI
-      await sendInitialPrompt(appDetail.value.initPrompt as any)
-    }
+    // Initial messages
+    messages.value.push({
+      id: messageId.value++,
+      sender: 'ai',
+      isMarkdown: true,
+      content: `欢迎使用AI对话！初始提示：${appDetail.value.initPrompt}`,
+    })
 
     await nextTick()
+    scrollToBottom()
   } catch (error) {
-    message.error('获取应用详情失败')
+    alert('获取应用详情失败')
   }
 })
 
@@ -702,7 +654,8 @@ onUnmounted(() => {
 }
 
 .message.user .message-content {
-  background: #bfdbfe;
+  background: #86efac;
+  color: #166534;
 }
 
 .message.user {
@@ -729,19 +682,8 @@ onUnmounted(() => {
 
 .thinking {
   display: flex;
-  flex-direction: column-reverse;
-  align-items: center;
-  gap: 8px;
-}
-
-.thinking-text {
-  color: #94a3b8;
-  font-size: 12px;
-}
-
-.dots {
-  display: flex;
   gap: 4px;
+  align-items: center;
 }
 
 .dot {
@@ -769,16 +711,6 @@ onUnmounted(() => {
 
   40% {
     transform: scale(1);
-  }
-}
-
-@keyframes fadeInOut {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
   }
 }
 
