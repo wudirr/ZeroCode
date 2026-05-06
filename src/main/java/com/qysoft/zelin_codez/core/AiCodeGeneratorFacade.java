@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @Description 零代码生成服务门面类
@@ -70,16 +71,19 @@ public class AiCodeGeneratorFacade {
     private Flux<String> processCodeStream(Flux<String> result ,String userMessage,CodeGenTypeEnum codeGenTypeEnum,Long appId) {
         StringBuilder stringBuilder = new StringBuilder();
         return result.doOnNext(stringBuilder::append).doOnComplete(() -> {
-            try {
-                String content = stringBuilder.toString();
-                Object codeResult = CodeParserExecutor.coderParser(content,codeGenTypeEnum);
-                //保存代码
-                File file = CodeFileSaverExecutor.saveCode(codeResult,codeGenTypeEnum,appId);
-                log.info("保存html文件成功,文件路径:{}", file.getAbsolutePath());
-            } catch (Exception e) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    String content = stringBuilder.toString();
+                    Object codeResult = CodeParserExecutor.coderParser(content, codeGenTypeEnum);
+                    //保存代码
+                    File file = CodeFileSaverExecutor.saveCode(codeResult, codeGenTypeEnum, appId);
+                    log.info("保存html文件成功,文件路径:{}", file.getAbsolutePath());
+                } catch (Exception e) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件保存失败");
+                }
+            }).exceptionally(e -> {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件保存失败");
-            }
-
+            });
         });
     }
 }
