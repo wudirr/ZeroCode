@@ -1,10 +1,84 @@
 declare namespace API {
+  type AppAddRequest = {
+    cover?: string
+    initPrompt?: string
+    codeGenType?: string
+  }
+
+  type AppDeployRequest = {
+    appId?: number
+  }
+
+  type AppEditRequest = {
+    id: number
+    appName?: string
+  }
+
+  type AppQueryRequest = {
+    pageNum?: number
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+    id?: number
+    appName?: string
+    codeGenType?: string
+    userId?: number
+    priority?: number
+  }
+
+  type AppUpdateRequest = {
+    id: number
+    appName?: string
+    cover?: string
+    initPrompt?: string
+    codeGenType?: string
+    deployKey?: string
+    priority?: number
+  }
+
+  type AppVO = {
+    id?: number
+    appName?: string
+    cover?: string
+    initPrompt?: string
+    codeGenType?: string
+    deployKey?: string
+    deployedTime?: string
+    priority?: number
+    userVO?: UserVO
+    editTime?: string
+    createTime?: string
+    updateTime?: string
+  }
+
+  type chatToGenCodeParams = {
+    appId: number
+    userMessage: string
+  }
+
   type DeleteRequest = {
     id?: number
   }
 
+  type getAppInfoParams = {
+    id: number
+  }
+
+  type getAppParams = {
+    id: number
+  }
+
   type getInfoParams = {
     id: number
+  }
+
+  type PageAppVO = {
+    records?: AppVO[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    optimizeCountQuery?: boolean
   }
 
   type pageParams = {
@@ -18,6 +92,12 @@ declare namespace API {
     totalPage?: number
     totalRow?: number
     optimizeCountQuery?: boolean
+  }
+
+  type ResultAppVO = {
+    code?: number
+    data?: AppVO
+    message?: string
   }
 
   type ResultBoolean = {
@@ -38,9 +118,21 @@ declare namespace API {
     message?: string
   }
 
+  type ResultPageAppVO = {
+    code?: number
+    data?: PageAppVO
+    message?: string
+  }
+
   type ResultPageUserVO = {
     code?: number
     data?: PageUserVO
+    message?: string
+  }
+
+  type ResultString = {
+    code?: number
+    data?: string
     message?: string
   }
 
@@ -60,6 +152,12 @@ declare namespace API {
     code?: number
     data?: UserVO
     message?: string
+  }
+
+  type ServerSentEventString = true
+
+  type serveStaticResourceParams = {
+    deployKey: string
   }
 
   type UserEditRequest = {

@@ -46,7 +46,7 @@
                   </a-menu>
                 </template>
               </a-dropdown>
-              <div style="font-size: 17px; color: #00c2ff">
+              <div class="user-name">
                 {{ userLoginStore.loginUser.userName ?? '未登录' }}
               </div>
             </a-space>
@@ -95,6 +95,11 @@ const menuItems = ref([
     title: '用户管理',
   },
   {
+    key: '/admin/app/manage',
+    label: '应用管理',
+    title: '应用管理',
+  },
+  {
     key: 'others',
     label: h('a', { href: 'https://github.com/wudirr/zelin_codez', target: '_blank' }, '赞助我们'),
     title: '赞助我们',
@@ -136,8 +141,13 @@ const logout = async () => {
 
 <style scoped>
 .header {
-  background: #fff;
+  background: transparent !important;
   padding: 0 24px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 }
 
 .header-left {
@@ -153,8 +163,78 @@ const logout = async () => {
 
 .site-title {
   margin: 0;
-  font-size: 18px;
-  color: #1890ff;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a2e;
+  text-shadow: 0 1px 4px rgba(102, 204, 255, 0.3);
+}
+
+:deep(.ant-menu) {
+  background: transparent !important;
+}
+
+:deep(.ant-menu-dark .ant-menu-inline.ant-menu-sub) {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(102, 204, 255, 0.3);
+}
+
+:deep(.ant-menu-item) {
+  color: #1a1a2e !important;
+  font-weight: 600;
+}
+
+:deep(.ant-menu-item:hover) {
+  color: #66ccff !important;
+}
+
+:deep(.ant-menu-item-selected) {
+  color: #66ccff !important;
+}
+
+:deep(.ant-menu-item-selected)::after {
+  border-bottom-color: #66ccff !important;
+}
+
+:deep(.ant-menu-dark .ant-menu-inline.ant-menu-sub) {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.user-login-status {
+  color: #1a1a2e;
+}
+
+.user-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: #66ccff;
+  text-shadow: 0 1px 4px rgba(102, 204, 255, 0.3);
+}
+
+:deep(.ant-btn-primary) {
+  background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+  border: none;
+  color: #1a1a2e;
+  font-weight: 600;
+}
+
+:deep(.ant-btn-primary:hover) {
+  background: linear-gradient(120deg, #66ccff 0%, #99eeff 100%) !important;
+}
+
+:deep(.ant-dropdown-menu) {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(102, 204, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(102, 204, 255, 0.2);
+}
+
+:deep(.ant-dropdown-menu-item) {
+  color: #1a1a2e !important;
+}
+
+:deep(.ant-dropdown-menu-item:hover) {
+  background: rgba(102, 204, 255, 0.15) !important;
+  color: #66ccff !important;
 }
 
 .ant-menu-horizontal {

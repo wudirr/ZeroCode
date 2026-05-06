@@ -4,9 +4,11 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.qysoft.zelin_codez.domain.entity.App;
 import com.qysoft.zelin_codez.domain.entity.User;
+import com.qysoft.zelin_codez.domain.form.app.AppDeployRequest;
 import com.qysoft.zelin_codez.domain.form.app.AppQueryRequest;
 import com.qysoft.zelin_codez.domain.vo.app.AppQueryVO;
 import com.qysoft.zelin_codez.domain.vo.app.AppVO;
+import org.springframework.http.codec.ServerSentEvent;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -51,12 +53,20 @@ public interface AppService extends IService<App> {
     QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest);
 
     /**
-     * 获取应用并且生成对应的代码
+     * 聊天并且生成应用
      *
+     * @param appId 应用id
      * @param userMessage 用户消息
-     * @param appId 应用标识
      * @param loginUser 登录用户
      * @return 流式输出
      */
-    Flux<String> chat2GenCode(String userMessage, Long appId, User loginUser);
+    Flux<ServerSentEvent<String>> chatToGenCode(Long appId, String userMessage, User loginUser);
+
+    /**
+     * 部署应用
+     *
+     * @param appDeployRequest 应用部署请求
+     * @return 部署地址
+     */
+    String deployApp(AppDeployRequest appDeployRequest,User loginUser);
 }
