@@ -484,7 +484,7 @@ const handleCreateApp = async () => {
 }
 
 const goToChat = (appId: number) => {
-  router.push(`/chat/${String(appId)}`)
+  router.push({ path: `/chat/${String(appId)}`, query: { isView: '1' } })
 }
 
 const previewApp = (app: API.AppVO) => {
