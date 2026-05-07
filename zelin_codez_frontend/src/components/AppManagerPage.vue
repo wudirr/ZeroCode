@@ -17,6 +17,110 @@
         <p class="subtitle">管理系统中的应用</p>
       </div>
 
+      <!-- 搜索区域 -->
+      <div class="search-section">
+        <input
+          v-model="searchParams.appName"
+          type="text"
+          placeholder="应用名称"
+          class="search-input-inline"
+          @keyup.enter="handleSearch"
+        />
+        <div class="custom-select" :class="{ 'is-open': openDropdown === 'codeGenType' }">
+          <div
+            class="select-trigger"
+            :class="{ 'has-value': searchParams.codeGenType }"
+            @click="toggleDropdown('codeGenType')"
+          >
+            <span class="select-value">{{
+              getLabel('codeGenType', searchParams.codeGenType) || '代码类型'
+            }}</span>
+            <span class="select-arrow"></span>
+          </div>
+          <div class="select-dropdown">
+            <div
+              class="select-option"
+              :class="{ 'is-selected': searchParams.codeGenType === 'html' }"
+              @click="selectOption('codeGenType', 'html')"
+            >
+              HTML
+            </div>
+            <div
+              class="select-option"
+              :class="{ 'is-selected': searchParams.codeGenType === 'multi_file' }"
+              @click="selectOption('codeGenType', 'multi_file')"
+            >
+              多文件
+            </div>
+          </div>
+        </div>
+        <div class="custom-select" :class="{ 'is-open': openDropdown === 'priority' }">
+          <div
+            class="select-trigger"
+            :class="{ 'has-value': searchParams.priority === 0 || searchParams.priority }"
+            @click="toggleDropdown('priority')"
+          >
+            <span class="select-value">{{
+              getLabel('priority', searchParams.priority) || '作品等级'
+            }}</span>
+            <span class="select-arrow"></span>
+          </div>
+          <div class="select-dropdown">
+            <div
+              class="select-option"
+              :class="{ 'is-selected': searchParams.priority === 0 }"
+              @click="selectOption('priority', 0)"
+            >
+              普通
+            </div>
+            <div
+              class="select-option"
+              :class="{ 'is-selected': searchParams.priority === 99 }"
+              @click="selectOption('priority', 99)"
+            >
+              精选
+            </div>
+          </div>
+        </div>
+        <div class="custom-select" :class="{ 'is-open': openDropdown === 'deployStatus' }">
+          <div
+            class="select-trigger"
+            :class="{ 'has-value': deployStatus }"
+            @click="toggleDropdown('deployStatus')"
+          >
+            <span class="select-value">{{
+              getLabel('deployStatus', deployStatus) || '部署状态'
+            }}</span>
+            <span class="select-arrow"></span>
+          </div>
+          <div class="select-dropdown">
+            <div
+              class="select-option"
+              :class="{ 'is-selected': deployStatus === 'deployed' }"
+              @click="selectOption('deployStatus', 'deployed')"
+            >
+              已部署
+            </div>
+            <div
+              class="select-option"
+              :class="{ 'is-selected': deployStatus === 'not_deployed' }"
+              @click="selectOption('deployStatus', 'not_deployed')"
+            >
+              未部署
+            </div>
+          </div>
+        </div>
+        <input
+          v-model="searchParams.userName"
+          type="text"
+          placeholder="创建者"
+          class="search-input-inline"
+          @keyup.enter="handleSearch"
+        />
+        <button class="btn-search" @click="handleSearch">搜索</button>
+        <button class="btn-search" @click="handleReset">重置</button>
+      </div>
+
       <!-- 表格区域 -->
       <div class="table-section">
         <CustomTable
@@ -49,7 +153,7 @@
             </span>
           </template>
           <template #deployKey="{ row }">
-            <span class="tag" :class="row.deployKey ? 'tag-deployed' : 'tag-not-deployed'">
+            <span class="tag nowrap" :class="row.deployKey ? 'tag-deployed' : 'tag-not-deployed'">
               <CheckCircleOutlined v-if="row.deployKey" />
               <ClockCircleOutlined v-else />
               {{ row.deployKey ? '已部署' : '未部署' }}
@@ -62,7 +166,22 @@
             <span class="time-text">{{ formatTime(row.createTime) }}</span>
           </template>
           <template #action="{ row }">
-            <button class="delete-btn" @click.stop="del(row.id)"><DeleteOutlined /> 删除</button>
+            <div class="action-buttons">
+              <button class="action-btn preview-btn" @click.stop="previewApp(row)">
+                <EyeOutlined /> 预览
+              </button>
+              <button
+                class="action-btn featured-btn"
+                :class="{ 'is-featured': row.priority === 99 }"
+                @click.stop="toggleFeatured(row)"
+              >
+                <StarOutlined />
+                {{ row.priority === 99 ? '取消精选' : '精选' }}
+              </button>
+              <button class="action-btn delete-btn" @click.stop="del(row.id)">
+                <DeleteOutlined /> 删除
+              </button>
+            </div>
           </template>
         </CustomTable>
       </div>
@@ -71,9 +190,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import { selectPageByAdmin, removeApp } from '@/api/appController'
+import { selectPageByAdmin, removeApp, setAppToFeatured } from '@/api/appController'
 import CustomTable from './CustomTable.vue'
 import {
   RocketOutlined,
@@ -83,7 +202,52 @@ import {
   ClockCircleOutlined,
   DeleteOutlined,
   FileImageOutlined,
+  EyeOutlined,
+  StarOutlined,
 } from '@ant-design/icons-vue'
+
+const openDropdown = ref<string | null>(null)
+
+const toggleDropdown = (name: string) => {
+  openDropdown.value = openDropdown.value === name ? null : name
+}
+
+const selectOption = (type: string, value: any) => {
+  if (type === 'codeGenType') {
+    searchParams.value.codeGenType = value
+  } else if (type === 'priority') {
+    searchParams.value.priority = value
+  } else if (type === 'deployStatus') {
+    deployStatus.value = value
+  }
+  openDropdown.value = null
+}
+
+const getLabel = (type: string, value: any) => {
+  if (type === 'codeGenType') {
+    return value === 'html' ? 'HTML' : value === 'multi_file' ? '多文件' : ''
+  } else if (type === 'priority') {
+    return value === 0 ? '普通' : value === 99 ? '精选' : ''
+  } else if (type === 'deployStatus') {
+    return value === 'deployed' ? '已部署' : value === 'not_deployed' ? '未部署' : ''
+  }
+  return ''
+}
+
+const closeDropdown = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (!target.closest('.custom-select')) {
+    openDropdown.value = null
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeDropdown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeDropdown)
+})
 
 const PriorityEnum: Record<number, string> = {
   0: '普通',
@@ -108,22 +272,74 @@ const columns = [
   { key: 'appName', title: '应用名称', dataIndex: 'appName', width: 120 },
   { key: 'codeGenType', title: '代码类型', width: 100 },
   { key: 'deployKey', title: '部署状态', width: 100 },
-  { key: 'priority', title: '优先级', dataIndex: 'priority', width: 70 },
+  { key: 'priority', title: '作品等级', dataIndex: 'priority', width: 70 },
   { key: 'userVO', title: '创建者', width: 90 },
   { key: 'createTime', title: '创建时间', width: 160 },
-  { key: 'action', title: '操作', width: 80 },
+  { key: 'action', title: '操作', width: 200 },
 ]
 
 const data = ref<API.AppVO[]>([])
 const total = ref(0)
 const params = ref({ pageNum: 1, pageSize: 10 })
+const searchParams = ref({
+  appName: '',
+  codeGenType: '',
+  priority: undefined as number | undefined,
+  userName: '',
+})
+const deployStatus = ref('')
 
 const load = async () => {
-  const res = await selectPageByAdmin(params.value as any)
+  const queryParams: any = {
+    pageNum: params.value.pageNum,
+    pageSize: params.value.pageSize,
+  }
+
+  if (searchParams.value.appName) {
+    queryParams.appName = searchParams.value.appName
+  }
+  if (searchParams.value.codeGenType) {
+    queryParams.codeGenType = searchParams.value.codeGenType
+  }
+  if (searchParams.value.priority !== undefined) {
+    queryParams.priority = searchParams.value.priority
+  }
+  if (searchParams.value.userName) {
+    queryParams.userName = searchParams.value.userName
+  }
+
+  const res = await selectPageByAdmin(queryParams)
   if (res.code === 200 && res.data) {
-    data.value = res.data.records || []
+    let records = res.data.records || []
+    if (deployStatus.value) {
+      records = records.filter((app: API.AppVO) => {
+        if (deployStatus.value === 'deployed') {
+          return !!app.deployKey
+        } else {
+          return !app.deployKey
+        }
+      })
+    }
+    data.value = records
     total.value = res.data.totalRow || 0
   }
+}
+
+const handleSearch = () => {
+  params.value.pageNum = 1
+  load()
+}
+
+const handleReset = () => {
+  searchParams.value = {
+    appName: '',
+    codeGenType: '',
+    priority: undefined,
+    userName: '',
+  }
+  deployStatus.value = ''
+  params.value.pageNum = 1
+  load()
 }
 
 const onChange = (page: number, size: number) => {
@@ -148,6 +364,26 @@ const del = (id: number) => {
       }
     },
   })
+}
+
+const previewApp = (row: API.AppVO) => {
+  const codeGenType = row.codeGenType || 'html'
+  const previewUrl = `http://localhost:8123/api/static/${codeGenType}_${row.id}/`
+  window.open(previewUrl, '_blank')
+}
+
+const toggleFeatured = async (row: API.AppVO) => {
+  try {
+    const res = await setAppToFeatured({ id: row.id as number })
+    if (res.code === 200) {
+      message.success(row.priority === 99 ? '已取消精选' : '已设为精选')
+      load()
+    } else {
+      message.error(res.message || '操作失败')
+    }
+  } catch (error) {
+    message.error('操作失败，请重试')
+  }
 }
 
 load()
@@ -232,6 +468,7 @@ load()
 }
 
 .title {
+  margin-left: -40px !important;
   font-size: 36px;
   font-weight: 800;
   color: #1a1a2e;
@@ -253,6 +490,170 @@ load()
   margin: 0;
 }
 
+.search-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.search-input-inline {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(102, 204, 255, 0.3);
+  border-radius: 19px;
+  font-size: 14px;
+  color: #2d3748;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+  outline: none;
+  min-width: 140px;
+}
+
+.search-input-inline:focus {
+  border-color: #66ccff;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 3px rgba(102, 204, 255, 0.15);
+}
+
+.search-input-inline::placeholder {
+  color: #a0aec0;
+}
+
+.custom-select {
+  position: relative;
+  min-width: 110px;
+}
+
+.select-trigger {
+  height: 38px;
+  padding: 0 30px 0 14px;
+  border: 1px solid rgba(102, 204, 255, 0.3);
+  border-radius: 19px;
+  font-size: 14px;
+  color: #a0aec0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.25s ease;
+}
+
+.select-trigger.has-value {
+  color: #4a5568;
+}
+
+.custom-select.is-open .select-trigger,
+.select-trigger:hover {
+  border-color: #66ccff;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.custom-select.is-open .select-trigger {
+  box-shadow: 0 0 0 3px rgba(102, 204, 255, 0.15);
+}
+
+.select-value {
+  flex: 1;
+}
+
+.select-arrow {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #66ccff;
+  transition: transform 0.25s ease;
+  margin-left: 8px;
+}
+
+.custom-select.is-open .select-arrow {
+  transform: rotate(180deg);
+}
+
+.select-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid rgba(102, 204, 255, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.2s ease;
+  z-index: 100;
+}
+
+.custom-select.is-open .select-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.select-option {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+}
+
+.select-option:hover {
+  background: rgba(102, 204, 255, 0.1);
+  color: #66ccff;
+}
+
+.select-option.is-selected {
+  background: rgba(102, 204, 255, 0.15);
+  color: #66ccff;
+  font-weight: 500;
+}
+
+.select-option.is-selected::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: #66ccff;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.btn-search {
+  height: 38px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 19px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #66ccff, #4fb3ff);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(102, 204, 255, 0.3);
+}
+
+.btn-search:hover {
+  background: linear-gradient(135deg, #4fb3ff, #33aaff);
+  box-shadow: 0 6px 16px rgba(102, 204, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-search:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(102, 204, 255, 0.3);
+}
+
 /* 标签样式 */
 .tag {
   display: inline-flex;
@@ -262,6 +663,7 @@ load()
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .tag-multi {
@@ -321,6 +723,7 @@ load()
   border-radius: 8px;
   font-size: 11px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .priority-normal {
@@ -333,20 +736,58 @@ load()
   color: #b8860b;
 }
 
-/* 删除按钮 */
-.delete-btn {
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
+  gap: 2px;
+  padding: 4px 8px;
   border: none;
-  background: linear-gradient(135deg, #ffebee, #ffcdd2);
-  color: #d32f2f;
-  border-radius: 12px;
-  font-size: 12px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.preview-btn {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  color: #1565c0;
+}
+
+.preview-btn:hover {
+  background: linear-gradient(135deg, #bbdefb, #90caf9);
+  transform: scale(1.05);
+}
+
+.featured-btn {
+  background: linear-gradient(135deg, #fff8e1, #ffecb3);
+  color: #f9a825;
+}
+
+.featured-btn:hover {
+  background: linear-gradient(135deg, #ffecb3, #ffe082);
+  transform: scale(1.05);
+}
+
+.featured-btn.is-featured {
+  background: linear-gradient(135deg, #ffd700, #ffec8b);
+  color: #b8860b;
+}
+
+.featured-btn.is-featured:hover {
+  background: linear-gradient(135deg, #ffb300, #ffc107);
+}
+
+.delete-btn {
+  background: linear-gradient(135deg, #ffebee, #ffcdd2);
+  color: #d32f2f;
 }
 
 .delete-btn:hover {

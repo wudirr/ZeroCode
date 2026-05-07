@@ -230,56 +230,26 @@ const changeSize = (event: Event) => {
 
 /* 表格行 */
 .data-row {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  transition: background 0.2s;
 }
 
 .data-row td {
   background: rgba(255, 255, 255, 0.9);
-  padding: 14px 16px;
+  padding: 12px 16px;
   text-align: center;
   color: #4a5568;
   font-size: 13px;
   border: none;
-  position: relative;
-}
-
-.data-row td:first-child {
-  border-radius: 16px 0 0 16px;
-  border-left: 3px solid rgba(102, 204, 255, 0.5);
-}
-
-.data-row td:last-child {
-  border-radius: 0 16px 16px 0;
-  border-right: 3px solid rgba(102, 204, 255, 0.5);
 }
 
 /* 奇数行 */
 .row-odd td {
-  background: rgba(132, 250, 176, 0.15);
+  background: #f8fafc;
 }
 
 /* 悬停效果 */
 .data-row:hover td {
-  background: linear-gradient(135deg, rgba(102, 204, 255, 0.25) 0%, rgba(153, 238, 255, 0.25) 100%);
-  transform: translateY(-3px);
-  box-shadow:
-    0 8px 20px rgba(102, 204, 255, 0.25),
-    0 2px 8px rgba(102, 204, 255, 0.15);
-}
-
-.data-row:hover td:first-child {
-  border-left-color: #66ccff;
-}
-
-.data-row:hover td:last-child {
-  border-right-color: #66ccff;
-}
-
-/* 点击效果 */
-.data-row:active td {
-  transform: scale(0.98);
-  box-shadow: 0 2px 8px rgba(102, 204, 255, 0.15);
+  background: rgba(191, 219, 254, 0.5);
 }
 
 /* 空状态 */
