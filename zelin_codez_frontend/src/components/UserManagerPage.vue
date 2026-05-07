@@ -125,7 +125,6 @@ const searchParams = ref<API.UserQueryRequest>({
   pageSize: 10,
   userName: '',
   id: '' as any,
-  userRole: ''
 })
 const roleOptions = ref([
   {
