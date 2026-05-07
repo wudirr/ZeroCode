@@ -12,6 +12,7 @@ declare namespace API {
   type AppEditRequest = {
     id: number
     appName?: string
+    cover?: string
   }
 
   type AppQueryRequest = {

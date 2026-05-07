@@ -11,7 +11,20 @@
         <h1>用户管理</h1>
         <p>管理系统用户信息</p>
       </div>
-
+      <div class="search-input" style="margin-bottom: 16px">
+        <a-space>
+          用户名: <a-input placeholder="搜索用户名...." v-model:value="searchParams.userName" allow-clear></a-input>
+          用户ID: <a-input placeholder="搜索用户ID...." v-model:value="searchParams.id" allow-clear></a-input>
+          角色: <a-select
+            v-model:value="searchParams.userRole"
+            placeholder='角色'
+            :options="roleOptions"
+            allow-clear
+          >
+          </a-select>  
+          <a-button type="primary" @click="handleSearch">搜索</a-button>        
+        </a-space>
+      </div>
       <div class="table-container">
         <a-table
           :columns="columns"
@@ -110,7 +123,25 @@ const total = ref(0)
 const searchParams = ref<API.UserQueryRequest>({
   pageNum: 1,
   pageSize: 10,
+  userName: '',
+  id: '' as any,
+  userRole: ''
 })
+const roleOptions = ref([
+  {
+    value: 'admin',
+    label: '管理员'
+  },
+  {
+    value: 'user',
+    label: '用户'
+  }
+])
+
+const handleSearch = () => {
+  searchParams.value.pageNum = 1 // 搜索时重置到第一页
+  fetchData()
+}
 
 const pagination = computed(() => {
   return {
@@ -145,7 +176,7 @@ async function fetchData() {
 
 const handlerDelete = async () => {
   const id = deleteId.value
-  const res = await remove({ id })
+  const res = await remove({ id: id as any })
   if (res.code === 200 && res.data) {
     message.success('删除成功')
     fetchData()

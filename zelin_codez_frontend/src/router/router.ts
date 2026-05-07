@@ -5,6 +5,7 @@ import AppManagerPage from '@/components/AppManagerPage.vue'
 import UserRegisterPage from '@/components/UserRegisterPage.vue'
 import HomeView from '@/views/HomeView.vue'
 import ChatView from '@/views/ChatView.vue'
+import AppEdit from '@/components/AppEdit.vue'
 
 export const routes = [
   {
@@ -40,6 +41,11 @@ export const routes = [
     path: '/admin/app/manage',
     name: 'appManage',
     component: AppManagerPage,
+  },
+  {
+    path: '/app/edit/:appId',
+    name: 'appEdit',
+    component: AppEdit,
   },
   {
     path: '/about',
