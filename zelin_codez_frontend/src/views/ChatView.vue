@@ -231,7 +231,7 @@ const closeAppDetailModal = () => {
 }
 
 const editApp = () => {
-  message.info('修改功能正在开发中...')
+  router.push(`/app/edit/${appDetail.value.id}`)
   closeAppDetailModal()
 }
 

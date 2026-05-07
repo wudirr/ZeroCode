@@ -488,12 +488,18 @@ const goToChat = (appId: number) => {
 }
 
 const previewApp = (app: API.AppVO) => {
-  message.info('预览功能开发中...')
+  const codeGenType = app.codeGenType || 'html'
+  const previewUrl = `http://localhost:8123/api/static/${codeGenType}_${app.id}/`
+  if (previewUrl) {
+    window.open(previewUrl, '_blank')
+  } else {
+    message.warning('请先生成代码后在预览页面查看效果')
+  }
 }
 
 const viewDeployed = (app: API.AppVO) => {
   if (app.deployKey) {
-    window.open(`/static/${app.deployKey}`, '_blank')
+    window.open(`http://localhost/${app.deployKey}`, '_blank')
   }
 }
 
