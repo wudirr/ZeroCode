@@ -2,6 +2,7 @@ package com.qysoft.zelin_codez.controller;
 
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
+import com.mybatisflex.core.update.UpdateChain;
 import com.qysoft.zelin_codez.common.DeleteRequest;
 import com.qysoft.zelin_codez.common.Result;
 import com.qysoft.zelin_codez.common.annotation.AuthCheck;
@@ -175,6 +176,25 @@ public class AppController {
         appVOPage.setTotalPage(appPage.getTotalPage());
         appVOPage.setRecords(appService.getAppVOList(appPage.getRecords()));
         return Result.success(appVOPage);
+    }
+
+    /**
+     * 设置应用为精选应用
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("/priority/{id}")
+    @AuthCheck(mustRole = "admin")
+    public Result<Boolean> setAppToFeatured(@PathVariable Long id) {
+        //校验参数
+        ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
+        App app = appService.getById(id);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        App updateApp = new App();
+        updateApp.setId(id);
+        updateApp.setPriority(AppConstant.GOOD_APP_PRIORITY);
+        return Result.success(appService.updateById(updateApp));
     }
 
     /**
