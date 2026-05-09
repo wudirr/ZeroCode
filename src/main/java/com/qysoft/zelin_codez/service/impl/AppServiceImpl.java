@@ -8,6 +8,7 @@ import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.qysoft.zelin_codez.common.constant.AppConstant;
+import com.qysoft.zelin_codez.common.enums.ChatHistoryMessageTypeEnum;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.core.AiCodeGeneratorFacade;
 import com.qysoft.zelin_codez.domain.entity.App;
@@ -22,21 +23,26 @@ import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.mapper.AppMapper;
 import com.qysoft.zelin_codez.service.AppService;
+import com.qysoft.zelin_codez.service.ChatHistoryService;
 import com.qysoft.zelin_codez.service.UserService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -45,6 +51,7 @@ import java.util.stream.Collectors;
  * @author wudi
  */
 @Service
+@Slf4j
 public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppService {
 
     @Resource
@@ -52,6 +59,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+
+    @Resource
+    @Lazy
+    private ChatHistoryService chatHistoryService;
 
     @Override
     public AppVO getAppVO(App app) {
@@ -77,7 +88,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             AppVO appVO = new AppVO();
             BeanUtils.copyProperties(app, appVO);
             List<UserVO> userVOs = userMap.computeIfAbsent(app.getUserId(), key -> new ArrayList<>());
-            if(CollectionUtil.isNotEmpty(userVOs)){
+            if (CollectionUtil.isNotEmpty(userVOs)) {
                 appVO.setUserVO(userVOs.getFirst());
             }
             return appVO;
@@ -105,7 +116,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         String sortOrder = appQueryRequest.getSortOrder();
         Integer priority = appQueryRequest.getPriority();
         queryWrapper.eq("id", id, id != null);
-        queryWrapper.eq("priority",priority);
+        queryWrapper.eq("priority", priority);
         queryWrapper.like("appName", appName, StringUtils.isNotBlank(appName));
         queryWrapper.eq("codeGenType", codeGenType, StringUtils.isNotBlank(codeGenType));
         queryWrapper.eq("userId", userId, userId != null);
@@ -126,10 +137,17 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (!app.getUserId().equals(loginUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
+        //保存用户消息
+        Boolean flag = chatHistoryService.addChatMessage(appId, userMessage, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser);
+        if (!flag) {
+            log.error("保存用户消息失败");
+        }
         //调用AI服务生成代码
         Flux<String> result = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, codeGenTypeEnum, app.getId());
+        StringBuilder stringBuilder = new StringBuilder();
         return result.map(flunk -> {
             Map<String, String> flunkMap = Map.of("d", flunk);
+            stringBuilder.append(flunk);
             String flunkJson = JSONUtil.toJsonStr(flunkMap);
             return ServerSentEvent.<String>builder()
                     .data(flunkJson)
@@ -139,11 +157,21 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                         .event("done")
                         .data("")
                         .build()
-        ));
+        )).doOnComplete(() -> {
+            //异步保存聊天记录
+            CompletableFuture.runAsync(() -> {
+                String message = stringBuilder.toString();
+                String messageType = ChatHistoryMessageTypeEnum.AI.getValue();
+                chatHistoryService.addChatMessage(appId, message, messageType, loginUser);
+            }).exceptionally(e -> {
+                log.error("保存历史聊天记录失败", e);
+                return null;
+            });
+        });
     }
 
     @Override
-    public String deployApp(AppDeployRequest appDeployRequest,User loginUser) {
+    public String deployApp(AppDeployRequest appDeployRequest, User loginUser) {
         //1.校验参数
         ThrowUtils.throwIf(appDeployRequest == null, ErrorCode.PARAMS_ERROR);
         Long appId = appDeployRequest.getAppId();
@@ -185,5 +213,18 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         boolean flag = this.updateById(updateApp);
         ThrowUtils.throwIf(!flag, ErrorCode.SYSTEM_ERROR, "更新应用失败");
         return AppConstant.CODE_DEPLOY_HOST + "/" + deployKey;
+    }
+
+    @Override
+    public boolean removeById(Serializable id) {
+        ThrowUtils.throwIf(id == null, ErrorCode.PARAMS_ERROR);
+        Long appId = Long.parseLong(id.toString());
+        App app = this.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        Boolean flag = chatHistoryService.deleteByAppId(appId);
+        if (!flag) {
+            log.error("删除历史聊天记录失败");
+        }
+        return super.removeById(appId);
     }
 }
