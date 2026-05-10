@@ -104,7 +104,7 @@ onMounted(async () => {
   if (res.code === 200 && res.data) {
     appDetail.value = res.data || {}
     appEditParam.value = {
-      id: appDetail.value.id as number,
+      id: appDetail.value.id as any,
       appName: appDetail.value.appName || '',
     }
   } else {
