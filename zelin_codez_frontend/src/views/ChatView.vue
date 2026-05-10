@@ -81,6 +81,14 @@
           <h2>{{ appDetail?.appName || 'AI 对话' }}</h2>
         </div>
         <div class="messages" ref="messagesContainer" @scroll="handleScroll">
+          <button
+            v-if="hasMoreHistory && !isLoadingHistory"
+            class="load-more-btn"
+            @click="loadMoreHistory"
+          >
+            加载更多
+          </button>
+          <div v-if="isLoadingHistory" class="loading-indicator">加载中...</div>
           <div v-for="message in messages" :key="message.id" :class="['message', message.sender]">
             <img
               v-if="message.sender === 'user'"
@@ -184,14 +192,13 @@ import { useRoute, useRouter } from 'vue-router'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { getApp, deployApp, deleteApp as deleteAppApi } from '@/api/appController'
+import { listAppChatHistory } from '@/api/chatHistoryController'
 import { useUserLoginStore } from '@/stores/UserLoginStore'
 import { message } from 'ant-design-vue'
 
 const route = useRoute()
 const router = useRouter()
 const userLoginStore = useUserLoginStore()
-
-const isView = route.query.isView === '1'
 
 const BACKEND_BASE_URL = 'http://localhost:8123'
 const appId = ref<string>(route.params.appId as string)
@@ -209,6 +216,10 @@ const isAtBottom = ref(true)
 const SCROLL_THRESHOLD = 50
 const thinkingText = ref<string>('')
 let thinkingTimeout: any = null
+
+const hasMoreHistory = ref(true)
+const isLoadingHistory = ref(false)
+const lastCreateTime = ref<string>('')
 
 const showAppDetailModal = ref<boolean>(false)
 const showDeployModal = ref<boolean>(false)
@@ -317,6 +328,15 @@ const scrollToBottom = () => {
 
 const handleScroll = () => {
   isAtBottom.value = checkIsAtBottom()
+
+  if (
+    messagesContainer.value &&
+    messagesContainer.value.scrollTop < 50 &&
+    hasMoreHistory.value &&
+    !isLoadingHistory.value
+  ) {
+    loadMoreHistory()
+  }
 }
 
 // 公共的发送消息给 AI 的函数
@@ -471,6 +491,49 @@ const sendMessage = async () => {
   await sendPromptToAI(userInput.value.trim())
 }
 
+const loadChatHistory = async (loadMore = false) => {
+  if (loadMore) {
+    if (!hasMoreHistory.value || isLoadingHistory.value) return
+    isLoadingHistory.value = true
+  }
+
+  const res = await listAppChatHistory({
+    appId: appId.value as any,
+    pageSize: 10,
+    lastCreateTime: loadMore ? lastCreateTime.value : undefined,
+  })
+
+  if (res.code === 200 && res.data?.records) {
+    let records = res.data.records.reverse()
+
+    const historyMessages = records.map((item) => ({
+      id: item.id,
+      sender: item.messageType === 'user' ? 'user' : 'ai',
+      content: item.message || '',
+      isMarkdown: item.messageType !== 'user',
+    }))
+
+    if (loadMore) {
+      messages.value = [...historyMessages, ...messages.value]
+    } else {
+      messages.value = historyMessages
+    }
+
+    if (records.length > 0) {
+      const lastRecord = records[records.length - 1]
+      lastCreateTime.value = lastRecord?.createTime || ''
+    }
+
+    hasMoreHistory.value = records.length === 10
+  }
+
+  isLoadingHistory.value = false
+}
+
+const loadMoreHistory = async () => {
+  await loadChatHistory(true)
+}
+
 const updatePendingText = async () => {
   if (pendingText.value && isPageVisible.value) {
     const aiMessage = messages.value.find(
@@ -496,32 +559,25 @@ const handleVisibilityChange = () => {
 }
 
 onMounted(async () => {
-  // 通过给 html 添加类来隐藏滚动条，避免直接操作 style
   document.documentElement.classList.add('hide-scroll')
 
   document.addEventListener('visibilitychange', handleVisibilityChange)
+
   try {
     const res = await getApp({ id: appId.value as any })
     appDetail.value = (res.data as API.AppVO) || {}
 
-    if (isView) {
-      // 查看模式：直接显示预览页面，不自动发送
-      // deployKey 可能不存在，需要根据 generationType 和 appId 构建
-      const generationType = appDetail.value.codeGenType || 'html'
-      const deployKey = `${generationType}_${appId.value}`
-      previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/`
-      previewVersion.value++
+    const generationType = appDetail.value.codeGenType || 'html'
+    previewUrl.value = `${BACKEND_BASE_URL}/api/static/${generationType}_${appId.value}/`
+    previewVersion.value++
 
-      // 显示欢迎消息
-      messages.value.push({
-        id: messageId.value++,
-        sender: 'ai',
-        isMarkdown: true,
-        content: `欢迎回来！这是您之前创建的应用。点击预览区域右上角的【新窗口】可在新页面查看。`,
-      })
-    } else {
-      // 新建模式：自动发送初始提示词给 AI
+    await loadChatHistory()
+
+    if (messages.value.length === 0 && appDetail.value.initPrompt) {
       await sendInitialPrompt(appDetail.value.initPrompt as any)
+    } else {
+      await nextTick()
+      scrollToBottom()
     }
 
     await nextTick()
@@ -825,6 +881,30 @@ onUnmounted(() => {
 .send-btn:disabled {
   background: #cbd5e1;
   cursor: not-allowed;
+}
+
+.load-more-btn {
+  align-self: center;
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.load-more-btn:hover {
+  background: #f1f5f9;
+  color: #3b82f6;
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 12px;
+  color: #94a3b8;
+  font-size: 14px;
 }
 
 .code-section {
