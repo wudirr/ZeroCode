@@ -6,6 +6,7 @@ import com.mybatisflex.core.service.IService;
 import com.qysoft.zelin_codez.domain.entity.ChatHistory;
 import com.qysoft.zelin_codez.domain.entity.User;
 import com.qysoft.zelin_codez.domain.form.history.ChatHistoryQueryRequest;
+import dev.langchain4j.memory.ChatMemory;
 
 import java.time.LocalDateTime;
 
@@ -53,4 +54,14 @@ public interface ChatHistoryService extends IService<ChatHistory> {
      * @return 历史记录分页对象
      */
     Page<ChatHistory> listAppChatHistoryByPage(Long appId, int pageSize, LocalDateTime lastCreateTime, User loginUser);
+
+    /**
+     * 加载聊天历史到内存
+     *
+     * @param appId      应用id
+     * @param chatMemory 聊天记忆对象
+     * @param maxCount   读取的最大的数量
+     * @return 加载数量
+     */
+    int loadChatHistoryToMemory(Long appId, ChatMemory chatMemory, int maxCount);
 }

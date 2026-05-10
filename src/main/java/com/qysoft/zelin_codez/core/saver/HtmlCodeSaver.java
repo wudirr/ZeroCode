@@ -2,6 +2,7 @@ package com.qysoft.zelin_codez.core.saver;
 
 import com.qysoft.zelin_codez.ai.model.HtmlCodeResult;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @Description 单文件代码保存器
@@ -12,7 +13,9 @@ public class HtmlCodeSaver extends CodeFileSaverTemplate<HtmlCodeResult> {
 
     @Override
     protected void saveCodeResult(HtmlCodeResult htmlCodeResult, String dirName) {
-        write2File(dirName, "index.html", htmlCodeResult.getHtmlCode());
+        if (StringUtils.isNotBlank(htmlCodeResult.getHtmlCode())) {
+            write2File(dirName, "index.html", htmlCodeResult.getHtmlCode());
+        }
     }
 
     @Override

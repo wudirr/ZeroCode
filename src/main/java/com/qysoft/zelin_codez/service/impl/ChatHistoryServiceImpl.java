@@ -1,5 +1,6 @@
 package com.qysoft.zelin_codez.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -15,11 +16,16 @@ import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.mapper.ChatHistoryMapper;
 import com.qysoft.zelin_codez.service.AppService;
 import com.qysoft.zelin_codez.service.ChatHistoryService;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.memory.ChatMemory;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 对话历史 服务层实现。
@@ -27,6 +33,7 @@ import java.time.LocalDateTime;
  * @author wudi
  */
 @Service
+@Slf4j
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory> implements ChatHistoryService {
 
     @Resource
@@ -101,5 +108,43 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         chatHistoryQueryRequest.setAppId(appId);
         QueryWrapper queryWrapper = this.getQueryWrapper(chatHistoryQueryRequest);
         return this.page(Page.of(1, pageSize), queryWrapper);
+    }
+
+    @Override
+    public int loadChatHistoryToMemory(Long appId, ChatMemory chatMemory, int maxCount) {
+        try {
+            //校验参数
+            ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR);
+            App app = appService.getById(appId);
+            ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+            //查询聊天历史
+            QueryWrapper queryWrapper = QueryWrapper.create()
+                    .eq("appId", appId)
+                    .orderBy("createTime", false)
+                    .limit(1, maxCount)
+                    .select("message", "messageType");
+            List<ChatHistory> chatHistoryList = this.list(queryWrapper);
+            if (CollectionUtil.isEmpty(chatHistoryList)) {
+                return 0;
+            }
+            //因为查询出来的时间是降序的,但是按照加载顺序需要反转一下
+            chatHistoryList = chatHistoryList.reversed();
+            //清理内存
+            chatMemory.clear();
+            int loadCount = 0;
+            for (ChatHistory item : chatHistoryList) {
+                if (item.getMessageType().equals(ChatHistoryMessageTypeEnum.USER.getValue())) {
+                    chatMemory.add(UserMessage.from(item.getMessage()));
+                } else if (item.getMessageType().equals(ChatHistoryMessageTypeEnum.AI.getValue())) {
+                    chatMemory.add(AiMessage.from(item.getMessage()));
+                }
+                loadCount++;
+            }
+            log.info("加载历史成功,加载数量:{}", loadCount);
+            return loadCount;
+        } catch (Exception e) {
+            log.error("加载历史失败", e);
+            return 0;
+        }
     }
 }

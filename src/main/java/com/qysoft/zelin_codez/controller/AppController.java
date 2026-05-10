@@ -2,7 +2,6 @@ package com.qysoft.zelin_codez.controller;
 
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.core.update.UpdateChain;
 import com.qysoft.zelin_codez.common.DeleteRequest;
 import com.qysoft.zelin_codez.common.Result;
 import com.qysoft.zelin_codez.common.annotation.AuthCheck;
@@ -29,7 +28,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 /**
  * 应用 控制层。
@@ -143,8 +141,6 @@ public class AppController {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
         int pageSize = appQueryRequest.getPageSize();
-        // 防止爬虫，限制查询条数不能超过20条
-        ThrowUtils.throwIf(pageSize > 20, ErrorCode.FORBIDDEN_ERROR, "每页查询条数不能超过20条");
         // 只查询当前用户的应用
         appQueryRequest.setUserId(loginUser.getId());
         int pageNum = appQueryRequest.getPageNum();
@@ -268,8 +264,8 @@ public class AppController {
     /**
      * 生成AI应用接口
      *
-     * @param appId 应用Id
-     * @param userMessage 用户消息
+     * @param appId              应用Id
+     * @param userMessage        用户消息
      * @param httpServletRequest 请求封装类
      * @return 流式输出
      */
@@ -284,12 +280,12 @@ public class AppController {
     /**
      * 部署应用
      *
-     * @param appDeployRequest 应用部署请求
+     * @param appDeployRequest   应用部署请求
      * @param httpServletRequest 请求封装类
      * @return 部署地址
      */
     @PostMapping("/deploy")
-    public Result<String> deployApp(@RequestBody AppDeployRequest appDeployRequest,HttpServletRequest httpServletRequest) {
+    public Result<String> deployApp(@RequestBody AppDeployRequest appDeployRequest, HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(appDeployRequest == null, ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(httpServletRequest);
         ThrowUtils.throwIf(loginUser == null || loginUser.getId() <= 0, ErrorCode.NOT_LOGIN_ERROR);

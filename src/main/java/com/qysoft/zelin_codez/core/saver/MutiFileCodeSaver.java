@@ -2,6 +2,7 @@ package com.qysoft.zelin_codez.core.saver;
 
 import com.qysoft.zelin_codez.ai.model.MultiFileCodeResult;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
+import io.micrometer.common.util.StringUtils;
 
 /**
  * @Description 多文件代码保存器
@@ -12,9 +13,15 @@ public class MutiFileCodeSaver extends CodeFileSaverTemplate<MultiFileCodeResult
 
     @Override
     protected void saveCodeResult(MultiFileCodeResult multiFileCodeResult, String dirName) {
-        write2File(dirName, "index.html", multiFileCodeResult.getHtmlCode());
-        write2File(dirName, "script.js", multiFileCodeResult.getJsCode());
-        write2File(dirName, "style.css", multiFileCodeResult.getCssCode());
+        if (StringUtils.isNotBlank(multiFileCodeResult.getHtmlCode())) {
+            write2File(dirName, "index.html", multiFileCodeResult.getHtmlCode());
+        }
+        if (StringUtils.isNotBlank(multiFileCodeResult.getJsCode())) {
+            write2File(dirName, "script.js", multiFileCodeResult.getJsCode());
+        }
+        if (StringUtils.isNotBlank(multiFileCodeResult.getCssCode())) {
+            write2File(dirName, "style.css", multiFileCodeResult.getCssCode());
+        }
     }
 
     @Override

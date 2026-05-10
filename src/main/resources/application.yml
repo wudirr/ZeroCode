@@ -10,10 +10,18 @@ spring:
     password: 111111
   profiles:
     active: local
+  session:
+    store-type: redis
+    # 30 天过期
+    timeout: 2592000
+
 server:
   port: 8123
   servlet:
     context-path: /api
+    session:
+      cookie:
+        max-age: 259200
 # springdoc-openapi
 springdoc:
   group-configs:
