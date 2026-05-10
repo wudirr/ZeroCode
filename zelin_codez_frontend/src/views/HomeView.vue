@@ -517,9 +517,11 @@ const loadMyApps = async () => {
   if (!userLoginStore.loginUser.id) return
   try {
     const res = await listMyApp({
-      userId: userLoginStore.loginUser.id as number,
+      userId: userLoginStore.loginUser.id as any,
       pageNum: 1,
-      pageSize: 10,
+      pageSize: 100,
+      sortField: 'createTime',
+      sortOrder: 'descend'
     })
     if (res.code === 200 && res.data?.records) {
       myApps.value = res.data.records

@@ -176,12 +176,106 @@
           </button>
         </div>
         <iframe
-          v-if="previewUrl"
+          v-if="messages.length > 0 && previewUrl"
           :key="'preview-' + previewVersion"
           :src="previewUrl"
           class="preview-iframe"
         ></iframe>
-        <div v-else class="no-preview">等待生成预览...</div>
+        <div v-else class="preview-empty">
+          <div class="robot-container">
+            <svg class="robot-svg" viewBox="0 0 200 200">
+              <circle cx="100" cy="90" r="50" fill="#e8f4fc" stroke="#66ccff" stroke-width="2" />
+              <line x1="100" y1="40" x2="100" y2="55" stroke="#66ccff" stroke-width="2" />
+              <circle cx="100" cy="35" r="6" fill="#ffd700" class="antenna-light" />
+              <ellipse cx="80" cy="85" rx="8" ry="10" fill="#66ccff" class="eye" />
+              <circle cx="80" cy="83" r="3" fill="#fff" class="eye-shine" />
+              <ellipse cx="120" cy="85" rx="8" ry="10" fill="#66ccff" class="eye" />
+              <circle cx="120" cy="83" r="3" fill="#fff" class="eye-shine" />
+              <path
+                d="M 80 105 Q 100 120 120 105"
+                stroke="#66ccff"
+                stroke-width="3"
+                fill="none"
+                class="mouth"
+              />
+              <rect
+                x="70"
+                y="145"
+                width="60"
+                height="40"
+                rx="10"
+                fill="#e8f4fc"
+                stroke="#66ccff"
+                stroke-width="2"
+              />
+              <rect
+                x="80"
+                y="150"
+                width="40"
+                height="20"
+                rx="4"
+                fill="#b3e5fc"
+                class="robot-screen"
+              />
+              <rect
+                x="50"
+                y="150"
+                width="15"
+                height="30"
+                rx="5"
+                fill="#e8f4fc"
+                stroke="#66ccff"
+                stroke-width="2"
+              />
+              <rect
+                x="135"
+                y="150"
+                width="15"
+                height="30"
+                rx="5"
+                fill="#e8f4fc"
+                stroke="#66ccff"
+                stroke-width="2"
+              />
+            </svg>
+          </div>
+          <h3 class="empty-title">{{ statusText }}</h3>
+          <p class="empty-hint">{{ statusHint }}</p>
+          <div class="floating-icons">
+            <svg
+              class="float-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#66ccff"
+              stroke-width="1.5"
+            >
+              <path d="M16 18l2-2v-5l-2-2-2 2v5l2 2m-10-4V8l-2-2-2 2v6l2 2m10-4l2 2 2-2-2-2" />
+            </svg>
+            <svg
+              class="float-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#ffd700"
+              stroke-width="1.5"
+            >
+              <path
+                d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+              />
+            </svg>
+            <svg
+              class="float-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#66ccff"
+              stroke-width="1.5"
+            >
+              <path d="M9 17H7A5 5 0 017 7h2m0 0h2a5 5 0 010 10h-2m0 0h2M9 7h6m-3 10l3-3-3-3" />
+            </svg>
+          </div>
+          <div v-if="isThinking" class="generating-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -190,7 +284,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { getApp, deployApp, deleteApp as deleteAppApi } from '@/api/appController'
 import { listAppChatHistory } from '@/api/chatHistoryController'
 import { useUserLoginStore } from '@/stores/UserLoginStore'
@@ -220,6 +314,9 @@ let thinkingTimeout: any = null
 const hasMoreHistory = ref(true)
 const isLoadingHistory = ref(false)
 const lastCreateTime = ref<string>('')
+
+const statusText = ref('开始对话吧，精彩即将呈现')
+const statusHint = ref('AI 正在准备为您创作')
 
 const showAppDetailModal = ref<boolean>(false)
 const showDeployModal = ref<boolean>(false)
@@ -567,11 +664,13 @@ onMounted(async () => {
     const res = await getApp({ id: appId.value as any })
     appDetail.value = (res.data as API.AppVO) || {}
 
-    const generationType = appDetail.value.codeGenType || 'html'
-    previewUrl.value = `${BACKEND_BASE_URL}/api/static/${generationType}_${appId.value}/`
-    previewVersion.value++
-
     await loadChatHistory()
+
+    if (messages.value.length > 0) {
+      const generationType = appDetail.value.codeGenType || 'html'
+      previewUrl.value = `${BACKEND_BASE_URL}/api/static/${generationType}_${appId.value}/`
+      previewVersion.value++
+    }
 
     if (messages.value.length === 0 && appDetail.value.initPrompt) {
       await sendInitialPrompt(appDetail.value.initPrompt as any)
@@ -588,8 +687,17 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange)
-  // 恢复滚动条
   document.documentElement.classList.remove('hide-scroll')
+})
+
+watch(isThinking, (newVal) => {
+  if (newVal) {
+    statusText.value = '正在为您创作...'
+    statusHint.value = 'AI 正在生成精彩的代码'
+  } else {
+    statusText.value = '代码已生成'
+    statusHint.value = '您可以在右侧查看生成的代码效果'
+  }
 })
 </script>
 <style scoped>
@@ -1014,14 +1122,176 @@ onUnmounted(() => {
   background: #94a3b8;
 }
 
-.no-preview {
+.preview-empty {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #64748b;
-  font-size: 18px;
-  background: rgba(255, 255, 255, 0.5);
+  background: linear-gradient(135deg, #f8fbfd 0%, #e8f4fc 100%);
+  padding: 40px;
+}
+
+.robot-container {
+  margin-bottom: 30px;
+}
+
+.robot-svg {
+  width: 160px;
+  height: 160px;
+  animation: breathe 3s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.eye {
+  animation: blink 4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes blink {
+  0%,
+  45%,
+  55%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.1);
+  }
+}
+
+.antenna-light {
+  animation: glow 1.5s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 5px #ffd700);
+  }
+  50% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 12px #ffd700);
+  }
+}
+
+.robot-screen {
+  animation: screenFlicker 2s ease-in-out infinite;
+}
+
+@keyframes screenFlicker {
+  0%,
+  100% {
+    fill: #b3e5fc;
+  }
+  50% {
+    fill: #e0f7ff;
+  }
+}
+
+.mouth {
+  animation: smile 3s ease-in-out infinite;
+}
+
+@keyframes smile {
+  0%,
+  100% {
+    d: path('M 80 105 Q 100 115 120 105');
+  }
+  50% {
+    d: path('M 80 105 Q 100 125 120 105');
+  }
+}
+
+.empty-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 8px;
+}
+
+.empty-hint {
+  font-size: 14px;
+  color: #718096;
+  margin: 0;
+}
+
+.floating-icons {
+  display: flex;
+  gap: 24px;
+  margin-top: 30px;
+}
+
+.float-icon {
+  width: 28px;
+  height: 28px;
+  animation: floatUp 3s ease-in-out infinite;
+}
+
+.float-icon:nth-child(1) {
+  animation-delay: 0s;
+}
+.float-icon:nth-child(2) {
+  animation-delay: 0.5s;
+}
+.float-icon:nth-child(3) {
+  animation-delay: 1s;
+}
+
+@keyframes floatUp {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-15px);
+    opacity: 1;
+  }
+}
+
+.generating-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 24px;
+}
+
+.generating-dots span {
+  width: 8px;
+  height: 8px;
+  background: #66ccff;
+  border-radius: 50%;
+  animation: dotBounce 1.4s ease-in-out infinite;
+}
+
+.generating-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+.generating-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes dotBounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .modal-overlay {

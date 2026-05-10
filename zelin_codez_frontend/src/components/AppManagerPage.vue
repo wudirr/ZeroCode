@@ -286,6 +286,8 @@ const searchParams = ref({
   codeGenType: '',
   priority: undefined as number | undefined,
   userName: '',
+  sortField: 'createTime',
+  sortOrder: 'descend',
 })
 const deployStatus = ref('')
 
@@ -293,6 +295,8 @@ const load = async () => {
   const queryParams: any = {
     pageNum: params.value.pageNum,
     pageSize: params.value.pageSize,
+    sortField: 'createTIme',
+    sortOrder: 'descend',
   }
 
   if (searchParams.value.appName) {
@@ -336,6 +340,8 @@ const handleReset = () => {
     codeGenType: '',
     priority: undefined,
     userName: '',
+    sortField: 'createTime',
+    sortOrder: 'descend',
   }
   deployStatus.value = ''
   params.value.pageNum = 1
