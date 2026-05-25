@@ -63,17 +63,22 @@ public class AiCodeGeneratorFacade {
      */
     public Flux<String> generateAndSaveCodeStream(String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
         ThrowUtils.throwIf(StringUtils.isBlank(userMessage) || codeGenTypeEnum == null, ErrorCode.PARAMS_ERROR);
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiService(appId);
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiService(appId,codeGenTypeEnum);
         return switch (codeGenTypeEnum) {
             case HTML ->
-                    processCodeStream(aiCodeGeneratorService.generateHtmlCodeStream(userMessage), userMessage, CodeGenTypeEnum.HTML, appId);
+                    processCodeStream(aiCodeGeneratorService.generateHtmlCodeStream(userMessage), codeGenTypeEnum, appId);
             case MULTI_FILE ->
-                    processCodeStream(aiCodeGeneratorService.generateMultiFileCodeStream(userMessage), userMessage, CodeGenTypeEnum.MULTI_FILE, appId);
+                    processCodeStream(aiCodeGeneratorService.generateMultiFileCodeStream(userMessage), codeGenTypeEnum, appId);
+            case VUE_PROJECT ->
+                    processCodeStream(aiCodeGeneratorService.generateVueProjectCodeStream(appId,userMessage), codeGenTypeEnum, appId);
             default -> throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的代码生成类型");
         };
     }
 
-    private Flux<String> processCodeStream(Flux<String> result, String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
+    private Flux<String> processCodeStream(Flux<String> result, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
+        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
+            return result;
+        }
         StringBuilder stringBuilder = new StringBuilder();
         return result.doOnNext(stringBuilder::append).doOnComplete(() -> {
             CompletableFuture.runAsync(() -> {
