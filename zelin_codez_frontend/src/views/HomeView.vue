@@ -38,6 +38,7 @@
                   <a-select v-model:value="codeGenType" class="type-select">
                     <a-select-option value="html">HTML</a-select-option>
                     <a-select-option value="multi_file">多文件</a-select-option>
+                    <a-select-option value="vue_project">vue项目</a-select-option>
                   </a-select>
                 </div>
                 <div class="input-footer-right">
@@ -489,7 +490,13 @@ const goToChat = (appId: number) => {
 
 const previewApp = (app: API.AppVO) => {
   const codeGenType = app.codeGenType || 'html'
-  const previewUrl = `http://localhost:8123/api/static/${codeGenType}_${app.id}/`
+  let previewUrl = '';
+  if(codeGenType === 'vue_project'){
+    previewUrl = `http://localhost:8123/api/static/${codeGenType}_${app.id}/dist/index.html`
+  }else{
+    previewUrl = `http://localhost:8123/api/static/${codeGenType}_${app.id}/`
+  }
+  
   if (previewUrl) {
     window.open(previewUrl, '_blank')
   } else {
@@ -521,7 +528,7 @@ const loadMyApps = async () => {
       pageNum: 1,
       pageSize: 100,
       sortField: 'createTime',
-      sortOrder: 'descend'
+      sortOrder: 'descend',
     })
     if (res.code === 200 && res.data?.records) {
       myApps.value = res.data.records

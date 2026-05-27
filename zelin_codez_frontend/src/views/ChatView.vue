@@ -557,8 +557,14 @@ const sendPromptToAI = async (userMessage: string) => {
 
     if (aiMessage && aiMessage.content) {
       const generationType = appDetail.value.codeGenType || 'html'
+      console.log('生成类型:', generationType)
       const deployKey = `${generationType}_${appId.value}`
-      previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/`
+      if (generationType === 'vue_project') {
+        previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/dist/index.html`
+        console.log(`预览地址: ${previewUrl.value}`)
+      } else {
+        previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/`
+      }
       previewVersion.value++
       aiMessage.content +=
         '\n\n代码已生成，现在为您显示预览页面。点击【部署】按钮可将应用部署到生产环境。'
@@ -668,7 +674,12 @@ onMounted(async () => {
 
     if (messages.value.length > 0) {
       const generationType = appDetail.value.codeGenType || 'html'
-      previewUrl.value = `${BACKEND_BASE_URL}/api/static/${generationType}_${appId.value}/`
+      const deployKey = `${generationType}_${appId.value}`;
+      if (generationType === 'vue_project') {
+        previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/dist/index.html`
+      } else {
+        previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/`
+      }
       previewVersion.value++
     }
 
