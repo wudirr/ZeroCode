@@ -1,7 +1,11 @@
 package com.qysoft.zelin_codez.core;
 
+import cn.hutool.json.JSONUtil;
 import com.qysoft.zelin_codez.ai.AiCodeGeneratorService;
 import com.qysoft.zelin_codez.ai.AiCodeGeneratorServiceFactory;
+import com.qysoft.zelin_codez.ai.message.AiResponseMessage;
+import com.qysoft.zelin_codez.ai.message.ToolExecutedRequestMessage;
+import com.qysoft.zelin_codez.ai.message.ToolExecutionRequestMessage;
 import com.qysoft.zelin_codez.ai.model.HtmlCodeResult;
 import com.qysoft.zelin_codez.ai.model.MultiFileCodeResult;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
@@ -10,11 +14,14 @@ import com.qysoft.zelin_codez.core.saver.CodeFileSaverExecutor;
 import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
+import dev.langchain4j.agent.tool.ToolExecutionRequest;
+import dev.langchain4j.service.TokenStream;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
@@ -70,7 +77,7 @@ public class AiCodeGeneratorFacade {
             case MULTI_FILE ->
                     processCodeStream(aiCodeGeneratorService.generateMultiFileCodeStream(userMessage), codeGenTypeEnum, appId);
             case VUE_PROJECT ->
-                    processCodeStream(aiCodeGeneratorService.generateVueProjectCodeStream(appId,userMessage), codeGenTypeEnum, appId);
+                    processCodeStream(aiCodeGeneratorService.generateVueProjectCodeStream(appId,userMessage));
             default -> throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的代码生成类型");
         };
     }
@@ -94,6 +101,26 @@ public class AiCodeGeneratorFacade {
             }).exceptionally(e -> {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件保存失败");
             });
+        });
+    }
+
+    private Flux<String> processCodeStream(TokenStream tokenStream) {
+        return Flux.create(sink -> {
+            tokenStream.onPartialResponse(response -> {
+                AiResponseMessage aiResponseMessage = new AiResponseMessage(response);
+                sink.next(JSONUtil.toJsonStr(aiResponseMessage));
+            }).beforeToolExecution(beforeToolExecution -> {
+                ToolExecutionRequestMessage toolExecutionRequestMessage = new ToolExecutionRequestMessage(beforeToolExecution.request());
+                sink.next(JSONUtil.toJsonStr(toolExecutionRequestMessage));
+            }).onToolExecuted(toolExecution -> {
+                ToolExecutedRequestMessage toolExecutedRequestMessage = new ToolExecutedRequestMessage(toolExecution);
+                sink.next(JSONUtil.toJsonStr(toolExecutedRequestMessage));
+            }).onCompleteResponse(completeResponse -> {
+                sink.complete();
+            }).onError(e -> {
+                log.error("处理流式输出失败",e);
+                sink.error(e);
+            }).start();
         });
     }
 }

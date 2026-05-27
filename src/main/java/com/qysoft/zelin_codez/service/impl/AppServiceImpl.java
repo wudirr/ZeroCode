@@ -11,6 +11,8 @@ import com.qysoft.zelin_codez.common.constant.AppConstant;
 import com.qysoft.zelin_codez.common.enums.ChatHistoryMessageTypeEnum;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.core.AiCodeGeneratorFacade;
+import com.qysoft.zelin_codez.core.build.VueProjectBuilder;
+import com.qysoft.zelin_codez.core.handler.StreamMessageHandlerExecutor;
 import com.qysoft.zelin_codez.domain.entity.App;
 import com.qysoft.zelin_codez.domain.entity.User;
 import com.qysoft.zelin_codez.domain.form.app.AppDeployRequest;
@@ -28,6 +30,7 @@ import com.qysoft.zelin_codez.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.codec.ServerSentEvent;
@@ -144,30 +147,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         //调用AI服务生成代码
         Flux<String> result = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, codeGenTypeEnum, app.getId());
-        StringBuilder stringBuilder = new StringBuilder();
-        return result.map(flunk -> {
-            Map<String, String> flunkMap = Map.of("d", flunk);
-            stringBuilder.append(flunk);
-            String flunkJson = JSONUtil.toJsonStr(flunkMap);
-            return ServerSentEvent.<String>builder()
-                    .data(flunkJson)
-                    .build();
-        }).concatWith(Mono.just(
-                ServerSentEvent.<String>builder()
-                        .event("done")
-                        .data("")
-                        .build()
-        )).doOnComplete(() -> {
-            //异步保存聊天记录
-            CompletableFuture.runAsync(() -> {
-                String message = stringBuilder.toString();
-                String messageType = ChatHistoryMessageTypeEnum.AI.getValue();
-                chatHistoryService.addChatMessage(appId, message, messageType, loginUser);
-            }).exceptionally(e -> {
-                log.error("保存历史聊天记录失败", e);
-                return null;
-            });
-        });
+        return StreamMessageHandlerExecutor.messageHandler(appId,loginUser,result,chatHistoryService,codeGenTypeEnum);
     }
 
     @Override
@@ -190,13 +170,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         //4.检查代码文件是否存在
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(app.getCodeGenType());
         ThrowUtils.throwIf(codeGenTypeEnum == null, ErrorCode.NOT_FOUND_ERROR);
-        String codeGenType = codeGenTypeEnum.getValue();
-        String sourceDirName = codeGenType + "_" + app.getId().toString();
-        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
-        File sourceDir = new File(sourceDirPath);
-        if (!sourceDir.exists() || !sourceDir.isDirectory()) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "应用代码不存在,请先生成代码");
-        }
+        File sourceDir = getSourceDir(codeGenTypeEnum, app);
         //5.构建部署目录,并且将代码文件拷贝到部署目录
         String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
         File deployDir = new File(deployDirPath);
@@ -226,5 +200,35 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             log.error("删除历史聊天记录失败");
         }
         return super.removeById(appId);
+    }
+
+    /**
+     * 构建项目原目录
+     *
+     * @param codeGenTypeEnum 代码生成类型
+     * @param app 应用
+     * @return 项目原目录
+     */
+    private static @NonNull File getSourceDir(CodeGenTypeEnum codeGenTypeEnum, App app) {
+        String sourceDirName = codeGenTypeEnum.getValue() + "_" + app.getId().toString();
+        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
+        File sourceDir = new File(sourceDirPath);
+        if (CodeGenTypeEnum.VUE_PROJECT == codeGenTypeEnum) {
+            //这个时候需要执行构建操作
+            VueProjectBuilder vueProjectBuilder = new VueProjectBuilder();
+            boolean buildRes = vueProjectBuilder.installAndBuildVueProject(sourceDir);
+            ThrowUtils.throwIf(!buildRes, ErrorCode.SYSTEM_ERROR, "项目构建失败");
+            //检查部署目录是否存在
+            File distFile = new File(sourceDir,"dist");
+            if (!distFile.exists() || !distFile.isDirectory()) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "项目构建成功,但是部署失败");
+            }
+            sourceDir = distFile;
+            log.info("Vue项目部署成功,路径:{}", sourceDir.getAbsolutePath());
+        }
+        if (!sourceDir.exists() || !sourceDir.isDirectory()) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "应用代码不存在,请先生成代码");
+        }
+        return sourceDir;
     }
 }
