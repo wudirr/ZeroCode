@@ -4,7 +4,6 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.util.RandomUtil;
-import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.qysoft.zelin_codez.common.constant.AppConstant;
@@ -26,6 +25,7 @@ import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.mapper.AppMapper;
 import com.qysoft.zelin_codez.service.AppService;
 import com.qysoft.zelin_codez.service.ChatHistoryService;
+import com.qysoft.zelin_codez.service.ScreenShotService;
 import com.qysoft.zelin_codez.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.Serializable;
@@ -45,7 +44,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -66,6 +64,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Resource
     @Lazy
     private ChatHistoryService chatHistoryService;
+
+    @Resource
+    private ScreenShotService screenShotService;
 
     @Override
     public AppVO getAppVO(App app) {
@@ -147,7 +148,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         //调用AI服务生成代码
         Flux<String> result = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, codeGenTypeEnum, app.getId());
-        return StreamMessageHandlerExecutor.messageHandler(appId,loginUser,result,chatHistoryService,codeGenTypeEnum);
+        return StreamMessageHandlerExecutor.messageHandler(appId, loginUser, result, chatHistoryService, codeGenTypeEnum);
     }
 
     @Override
@@ -186,7 +187,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         updateApp.setDeployedTime(LocalDateTime.now());
         boolean flag = this.updateById(updateApp);
         ThrowUtils.throwIf(!flag, ErrorCode.SYSTEM_ERROR, "更新应用失败");
-        return AppConstant.CODE_DEPLOY_HOST + "/" + deployKey;
+        String vistUrl = AppConstant.CODE_DEPLOY_HOST + "/" + deployKey;
+        //异步生成封面
+        screenShotService.generateScreenShotAsync(vistUrl, app);
+        return vistUrl;
     }
 
     @Override
@@ -206,7 +210,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
      * 构建项目原目录
      *
      * @param codeGenTypeEnum 代码生成类型
-     * @param app 应用
+     * @param app             应用
      * @return 项目原目录
      */
     private static @NonNull File getSourceDir(CodeGenTypeEnum codeGenTypeEnum, App app) {
@@ -219,7 +223,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             boolean buildRes = vueProjectBuilder.installAndBuildVueProject(sourceDir);
             ThrowUtils.throwIf(!buildRes, ErrorCode.SYSTEM_ERROR, "项目构建失败");
             //检查部署目录是否存在
-            File distFile = new File(sourceDir,"dist");
+            File distFile = new File(sourceDir, "dist");
             if (!distFile.exists() || !distFile.isDirectory()) {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "项目构建成功,但是部署失败");
             }

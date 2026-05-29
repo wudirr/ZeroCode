@@ -3,7 +3,6 @@ package com.qysoft.zelin_codez.core.handler;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.github.xiaoymin.knife4j.core.conf.GlobalConstants;
 import com.qysoft.zelin_codez.ai.message.*;
 import com.qysoft.zelin_codez.common.constant.AppConstant;
 import com.qysoft.zelin_codez.common.enums.ChatHistoryMessageTypeEnum;
@@ -11,6 +10,7 @@ import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.core.build.VueProjectBuilder;
 import com.qysoft.zelin_codez.domain.entity.User;
 import com.qysoft.zelin_codez.exception.BusinessException;
+import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.service.ChatHistoryService;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +37,8 @@ public class JsonMessageStreamHandler {
         StringBuilder stringBuilder = new StringBuilder();
         Set<String> toolIds = new HashSet<>();
         return result.map(flunk -> {
-            String message = jsonMessageHandler(flunk,stringBuilder,toolIds);
-            if(message == null){
+            String message = jsonMessageHandler(flunk, stringBuilder, toolIds);
+            if (message == null) {
                 throw new BusinessException("解析消息失败");
             }
             Map<String, String> flunkMap = Map.of("d", message);
@@ -61,12 +61,13 @@ public class JsonMessageStreamHandler {
                 log.error("保存历史聊天记录失败", e);
                 return null;
             });
-            //异步构建vue项目
+            //构建vue项目
             String fileName = String.format("%s_%s", CodeGenTypeEnum.VUE_PROJECT.getValue(), appId.toString());
             String workDir = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + fileName;
             File workFile = new File(workDir);
             VueProjectBuilder vueProjectBuilder = new VueProjectBuilder();
-            vueProjectBuilder.installAndBuildVueProjectAsync(workFile);
+            boolean flag = vueProjectBuilder.installAndBuildVueProject(workFile);
+            ThrowUtils.throwIf(!flag, ErrorCode.SYSTEM_ERROR, "构建vue项目失败");
         });
     }
 
@@ -82,7 +83,7 @@ public class JsonMessageStreamHandler {
         StreamMessage streamMessage = JSONUtil.toBean(flunk, StreamMessage.class);
         StreamMessageTypeEnum streamMessageTypeEnum = StreamMessageTypeEnum.getByValue(streamMessage.getType());
         ThrowUtils.throwIf(streamMessageTypeEnum == null, "不支持的消息类型");
-        switch (streamMessageTypeEnum){
+        switch (streamMessageTypeEnum) {
             case AI_RESPONSE -> {
                 AiResponseMessage aiResponseMessage = JSONUtil.toBean(flunk, AiResponseMessage.class);
                 String data = aiResponseMessage.getData();
@@ -96,7 +97,7 @@ public class JsonMessageStreamHandler {
                     //这个时候将这个工具调用请求的id添加进来,说明是一次新的工具调用请求
                     toolIds.add(toolId);
                     return "\n\n[选择工具]写入文件\n\n";
-                }else{
+                } else {
                     return "";
                 }
             }
@@ -104,7 +105,7 @@ public class JsonMessageStreamHandler {
                 try {
                     ToolExecutedRequestMessage toolExecutedRequestMessage = JSONUtil.toBean(flunk, ToolExecutedRequestMessage.class);
                     String arguments = toolExecutedRequestMessage.getArguments();
-                    if(StringUtils.isBlank(arguments)) return "";
+                    if (StringUtils.isBlank(arguments)) return "";
                     //这个时候解析arguments,拿到里面的参数
                     JSONObject jsonObject = JSONUtil.parseObj(arguments);
                     String relativeFilePath = jsonObject.getStr("relativeFilePath");
@@ -115,15 +116,15 @@ public class JsonMessageStreamHandler {
                     if (StringUtils.isBlank(content)) return "";
                     //构建返回结果
                     String result = String.format("""
-                        [工具调用]写入文件%s
-                        ```%s
-                        %s
-                        ```
-                        """,relativeFilePath,suffix,content);
+                            [工具调用]写入文件%s
+                            ```%s
+                            %s
+                            ```
+                            """, relativeFilePath, suffix, content);
                     String output = String.format("\n\n%s\n\n", result);
                     stringBuilder.append(output);
                     return output;
-                }catch(Exception e){
+                } catch (Exception e) {
                     log.error("解析工具调用结果失败", e);
                 }
             }
