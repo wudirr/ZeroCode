@@ -1,7 +1,9 @@
 package com.qysoft.zelin_codez.controller;
 
+import cn.hutool.core.io.FileUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
+import com.qysoft.zelin_codez.ai.AiCodeTypeRoutingGeneratorService;
 import com.qysoft.zelin_codez.common.DeleteRequest;
 import com.qysoft.zelin_codez.common.Result;
 import com.qysoft.zelin_codez.common.annotation.AuthCheck;
@@ -12,12 +14,15 @@ import com.qysoft.zelin_codez.domain.entity.App;
 import com.qysoft.zelin_codez.domain.entity.User;
 import com.qysoft.zelin_codez.domain.form.app.*;
 import com.qysoft.zelin_codez.domain.vo.app.AppVO;
+import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.service.AppService;
+import com.qysoft.zelin_codez.service.ProjectDownLoadService;
 import com.qysoft.zelin_codez.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -27,6 +32,7 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
+import java.io.File;
 import java.time.LocalDateTime;
 
 /**
@@ -45,6 +51,12 @@ public class AppController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private ProjectDownLoadService projectDownLoadService;
+
+    @Resource
+    private AiCodeTypeRoutingGeneratorService aiCodeTypeRoutingGeneratorService;
+
     /**
      * 用户创建应用
      *
@@ -56,10 +68,12 @@ public class AppController {
     public Result<Long> addApp(@RequestBody @Valid AppAddRequest appAddRequest, HttpServletRequest request) {
         log.info("用户创建应用:{}", appAddRequest);
         User loginUser = userService.getLoginUser(request);
-        //校验代码生成类型是否正确
-        ThrowUtils.throwIf(CodeGenTypeEnum.getEnumByValue(appAddRequest.getCodeGenType()) == null, ErrorCode.PARAMS_ERROR, "不支持该类型");
         App app = new App();
         BeanUtils.copyProperties(appAddRequest, app);
+        CodeGenTypeEnum codeGenTypeEnum = aiCodeTypeRoutingGeneratorService.routeCodeGenType(appAddRequest.getInitPrompt());
+        //校验代码生成类型是否正确
+        ThrowUtils.throwIf(codeGenTypeEnum == null, ErrorCode.PARAMS_ERROR, "不支持该类型");
+        app.setCodeGenType(codeGenTypeEnum.getValue());
         //默认取提示词的前12位作为应用名称
         String appName = appAddRequest.getInitPrompt().substring(0, Math.min(appAddRequest.getInitPrompt().length(), 12));
         app.setAppName(appName);
@@ -290,6 +304,31 @@ public class AppController {
         User loginUser = userService.getLoginUser(httpServletRequest);
         ThrowUtils.throwIf(loginUser == null || loginUser.getId() <= 0, ErrorCode.NOT_LOGIN_ERROR);
         return Result.success(appService.deployApp(appDeployRequest, loginUser));
+    }
+
+    /**
+     * 下载代码接口
+     *
+     * @param appId               应用id
+     * @param httpServletRequest  http请求封装类
+     * @param httpServletResponse http响应封装类
+     */
+    @GetMapping("/download/{appId}")
+    public void downloadApp(@PathVariable Long appId, HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR);
+        App app = appService.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        ThrowUtils.throwIf(loginUser == null || loginUser.getId() <= 0, ErrorCode.NOT_LOGIN_ERROR);
+        //构建项目路径
+        String fileName = String.format("%s_%s", app.getCodeGenType(), appId);
+        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + fileName;
+        File projectFile = FileUtil.file(projectPath);
+        if (!projectFile.exists() || !projectFile.isDirectory()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "项目文件不存在");
+        }
+        String downloadFileName = appId.toString();
+        projectDownLoadService.downloadProjectAsZip(projectPath, downloadFileName, httpServletResponse);
     }
 
     /**
