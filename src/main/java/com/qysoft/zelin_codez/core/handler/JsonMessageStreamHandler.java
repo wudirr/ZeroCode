@@ -10,7 +10,6 @@ import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.core.build.VueProjectBuilder;
 import com.qysoft.zelin_codez.domain.entity.User;
 import com.qysoft.zelin_codez.exception.BusinessException;
-import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.service.ChatHistoryService;
 import lombok.extern.slf4j.Slf4j;
@@ -66,8 +65,7 @@ public class JsonMessageStreamHandler {
             String workDir = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + fileName;
             File workFile = new File(workDir);
             VueProjectBuilder vueProjectBuilder = new VueProjectBuilder();
-            boolean flag = vueProjectBuilder.installAndBuildVueProject(workFile);
-            ThrowUtils.throwIf(!flag, ErrorCode.SYSTEM_ERROR, "构建vue项目失败");
+            vueProjectBuilder.installAndBuildVueProjectAsync(workFile);
         });
     }
 
