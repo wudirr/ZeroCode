@@ -19,7 +19,7 @@ public class VueProjectBuilder {
      *
      * @param workFile 执行目录
      */
-    public void installAndBuildVueProjectAsync(File workFile){
+    public void installAndBuildVueProjectAsync(File workFile) {
         Thread.ofVirtual().name("vue-project-build-thread" + System.currentTimeMillis()).start(() -> {
             try {
                 installAndBuildVueProject(workFile);
@@ -50,6 +50,12 @@ public class VueProjectBuilder {
             boolean buildRes = executeBuild(workFile);
             if (!buildRes) {
                 log.error("项目构建失败");
+                return false;
+            }
+            //检查是否生成依赖目录
+            File nodeModulesFile = new File(workFile, "node_modules");
+            if (!nodeModulesFile.exists()) {
+                log.error("node_modules目录不存在");
                 return false;
             }
             //检查是否生成dist目录
@@ -114,14 +120,7 @@ public class VueProjectBuilder {
                 process.destroyForcibly();
                 return false;
             }
-            int exit = process.exitValue();
-            if (exit == 0) {
-                log.info("命令:{}执行成功", command);
-                return true;
-            } else {
-                log.error("命令:{}执行失败,错误码:{}", command, exit);
-                return false;
-            }
+            return true;
         } catch (Exception e) {
             log.error("执行命令失败:{},错误信息:{}", command, e.getMessage());
             return false;
