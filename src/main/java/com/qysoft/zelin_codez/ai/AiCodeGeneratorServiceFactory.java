@@ -5,7 +5,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.qysoft.zelin_codez.ai.tools.FileWriteTool;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.exception.BusinessException;
-import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.service.ChatHistoryService;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
@@ -15,7 +14,6 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
@@ -71,13 +69,13 @@ public class AiCodeGeneratorServiceFactory {
     /**
      * 获取对应的AiService实例对象,携带代码生成类型
      *
-     * @param appId 应用id
+     * @param appId           应用id
      * @param codeGenTypeEnum 代码生成类型
      * @return Ai服务实例
      */
-    public AiCodeGeneratorService getAiService(Long appId,CodeGenTypeEnum codeGenTypeEnum) {
+    public AiCodeGeneratorService getAiService(Long appId, CodeGenTypeEnum codeGenTypeEnum) {
         String cacheKey = buildKey(appId, codeGenTypeEnum);
-        return serviceCache.get(cacheKey, key -> createAiService(appId,codeGenTypeEnum));
+        return serviceCache.get(cacheKey, key -> createAiService(appId, codeGenTypeEnum));
     }
 
     private AiCodeGeneratorService createAiService(Long appId, CodeGenTypeEnum codeGenTypeEnum) {
