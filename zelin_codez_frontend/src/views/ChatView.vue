@@ -79,6 +79,9 @@
             返回
           </button>
           <h2>{{ appDetail?.appName || 'AI 对话' }}</h2>
+            <span v-if="appDetail?.codeGenType" class="type-tag" :class="'type-' + appDetail.codeGenType">
+              {{ codeGenTypeLabel }}
+            </span>
         </div>
         <div class="messages" ref="messagesContainer" @scroll="handleScroll">
           <button
@@ -126,7 +129,7 @@
       <!-- 右边预览区域 -->
       <div class="code-section">
         <div class="code-header">
-          <button @click="showAppDetail" class="btn-secondary">
+          <button @click="showAppDetail" class="btn-secondary" :disabled="!previewUrl || isThinking || isBuilding">
             <svg
               class="btn-icon"
               viewBox="0 0 24 24"
@@ -142,7 +145,7 @@
             </svg>
             应用详情
           </button>
-          <button @click="openInNewWindow" class="btn-secondary">
+          <button @click="openInNewWindow" class="btn-secondary" :disabled="!previewUrl || isThinking || isBuilding">
             <svg
               class="btn-icon"
               viewBox="0 0 24 24"
@@ -158,8 +161,14 @@
             </svg>
             新窗口
           </button>
-          <button @click="deployAppAction" class="btn-primary">
+          <button
+            @click="deployAppAction"
+            :disabled="!previewUrl || isThinking || isBuilding || deploying"
+            class="btn-primary"
+            :class="{ 'is-loading': deploying }"
+          >
             <svg
+              v-if="!deploying"
               class="btn-icon"
               viewBox="0 0 24 24"
               fill="none"
@@ -172,7 +181,35 @@
                 d="M12 19l9-9m0 0l-9 9m9-9v6m-5.65-3.65l4.65 4.65M5 10.5a7.5 7.5 0 0115 0v7.5a7.5 7.5 0 01-15 0v-7.5z"
               />
             </svg>
-            部署
+            <svg v-else class="btn-icon spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {{ deploying ? '部署中' : '部署' }}
+          </button>
+          <button
+            @click="downloadCode"
+            :disabled="!previewUrl || isThinking || downloading"
+            class="btn-download"
+            :class="{ 'is-loading': downloading }"
+          >
+            <svg
+              v-if="!downloading"
+              class="btn-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
+              />
+            </svg>
+            <svg v-else class="btn-icon spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {{ downloading ? '下载中' : '下载代码' }}
           </button>
         </div>
         <iframe
@@ -181,6 +218,42 @@
           :src="previewUrl"
           class="preview-iframe"
         ></iframe>
+        <!-- Vue 项目构建中动画 -->
+        <div v-else-if="isBuilding" class="preview-empty building-state">
+          <div class="building-icon-wrapper">
+            <svg class="building-gear" viewBox="0 0 24 24" fill="none" stroke="#66ccff" stroke-width="1.5">
+              <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+            </svg>
+            <svg class="building-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+              <line x1="12" y1="22.08" x2="12" y2="12" />
+            </svg>
+          </div>
+          <h3 class="building-title">项目构建中...</h3>
+          <p class="building-hint">Vue 项目需要编译，请稍候</p>
+          <div class="building-progress-bar">
+            <div class="building-progress-fill"></div>
+          </div>
+          <div class="building-steps">
+            <div class="building-step">
+              <span class="step-dot active"></span>
+              <span class="step-text">代码生成</span>
+            </div>
+            <div class="building-step-line active"></div>
+            <div class="building-step">
+              <span class="step-dot active pulse"></span>
+              <span class="step-text active">项目构建</span>
+            </div>
+            <div class="building-step-line"></div>
+            <div class="building-step">
+              <span class="step-dot"></span>
+              <span class="step-text">预览就绪</span>
+            </div>
+          </div>
+        </div>
+        <!-- 默认空状态 (robot) -->
         <div v-else class="preview-empty">
           <div class="robot-container">
             <svg class="robot-svg" viewBox="0 0 200 200">
@@ -284,7 +357,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { getApp, deployApp, deleteApp as deleteAppApi } from '@/api/appController'
 import { listAppChatHistory } from '@/api/chatHistoryController'
 import { useUserLoginStore } from '@/stores/UserLoginStore'
@@ -297,6 +370,13 @@ const userLoginStore = useUserLoginStore()
 const BACKEND_BASE_URL = 'http://localhost:8123'
 const appId = ref<string>(route.params.appId as string)
 const appDetail = ref<API.AppVO>({})
+
+const codeGenTypeMap: Record<string, string> = {
+  html: 'HTML',
+  multi_file: '多文件',
+  vue_project: 'Vue 项目',
+}
+const codeGenTypeLabel = computed(() => codeGenTypeMap[appDetail.value.codeGenType || ''] || '')
 const userInput = ref<string>('')
 const isThinking = ref<boolean>(false)
 const messages = ref<any[]>([])
@@ -314,6 +394,9 @@ let thinkingTimeout: any = null
 const hasMoreHistory = ref(true)
 const isLoadingHistory = ref(false)
 const lastCreateTime = ref<string>('')
+const downloading = ref<boolean>(false)
+const isBuilding = ref<boolean>(false)
+const deploying = ref<boolean>(false)
 
 const statusText = ref('开始对话吧，精彩即将呈现')
 const statusHint = ref('AI 正在准备为您创作')
@@ -372,6 +455,7 @@ const deployAppAction = async () => {
     message.warning('请先生成代码')
     return
   }
+  deploying.value = true
   try {
     const res = await deployApp({ appId: appId.value as any })
     const deployUrl_temp = String(res.data || '')
@@ -384,6 +468,8 @@ const deployAppAction = async () => {
     showDeployModal.value = true
   } catch (error) {
     message.error('部署失败，请重试')
+  } finally {
+    deploying.value = false
   }
 }
 
@@ -404,6 +490,56 @@ const openInNewWindow = () => {
     window.open(previewUrl.value, '_blank')
   } else {
     message.warning('请先生成代码后在预览页面查看效果')
+  }
+}
+
+const downloadCode = async () => {
+  if (!previewUrl.value || isThinking.value || downloading.value) return
+
+  downloading.value = true
+  try {
+    const url = `${BACKEND_BASE_URL}/api/app/download/${appId.value}`
+    const response = await fetch(url, {
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      message.error('下载失败，请重试')
+      return
+    }
+
+    // 从响应头中提取文件名
+    const contentDisposition = response.headers.get('Content-Disposition')
+    let filename = `${appDetail.value.appName || 'code'}.zip`
+    if (contentDisposition) {
+      // 优先匹配 filename*=UTF-8''xxx 编码格式
+      const utf8Match = contentDisposition.match(/filename\*=UTF-8''(.+)/i)
+      if (utf8Match) {
+        filename = decodeURIComponent(utf8Match[1].replace(/"/g, ''))
+      } else {
+        // 回退匹配 filename="xxx" 格式
+        const match = contentDisposition.match(/filename="?([^";\n]+)"?/i)
+        if (match) {
+          filename = match[1]
+        }
+      }
+    }
+
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+
+    message.success('下载成功')
+  } catch (error) {
+    message.error('下载失败，请重试')
+  } finally {
+    downloading.value = false
   }
 }
 
@@ -560,6 +696,12 @@ const sendPromptToAI = async (userMessage: string) => {
       console.log('生成类型:', generationType)
       const deployKey = `${generationType}_${appId.value}`
       if (generationType === 'vue_project') {
+        // Vue 项目需要后端异步构建，先展示构建动画
+        isBuilding.value = true
+        aiMessage.content +=
+          '\n\nVue 项目代码已生成，正在构建项目...'
+        await sleep(10000)
+        isBuilding.value = false
         previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/dist/index.html`
         console.log(`预览地址: ${previewUrl.value}`)
       } else {
@@ -710,6 +852,16 @@ watch(isThinking, (newVal) => {
     statusHint.value = '您可以在右侧查看生成的代码效果'
   }
 })
+
+watch(isBuilding, (newVal) => {
+  if (newVal) {
+    statusText.value = '正在构建项目...'
+    statusHint.value = 'Vue 项目编译中，即将呈现'
+  } else {
+    statusText.value = '构建完成'
+    statusHint.value = '您可以在右侧查看生成的代码效果'
+  }
+})
 </script>
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
@@ -809,6 +961,34 @@ watch(isThinking, (newVal) => {
   margin: 0;
   font-size: 20px;
   font-weight: 500;
+}
+
+.type-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.type-html {
+  background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+  color: #e65100;
+}
+
+.type-multi_file {
+  background: linear-gradient(135deg, #e0f7ff, #b3e5fc);
+  color: #0277bd;
+}
+
+.type-vue_project {
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  color: #2e7d32;
 }
 
 .messages {
@@ -1053,10 +1233,11 @@ watch(isThinking, (newVal) => {
 
 .btn-primary,
 .btn-secondary,
-.btn-danger {
-  padding: 6px 12px;
+.btn-danger,
+.btn-download {
+  padding: 6px 14px;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
   font-family: 'Fira Sans', sans-serif;
   transition: all 0.2s;
@@ -1077,9 +1258,61 @@ watch(isThinking, (newVal) => {
   color: #fff;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:disabled {
+  background: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-primary.is-loading {
+  background: linear-gradient(60deg, #8cb8d8 0%, #6aa88a 100%);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: wait;
+}
+
+.btn-download {
+  background: linear-gradient(135deg, #66ccff 0%, #4fb3ff 100%);
+  color: #fff;
+}
+
+.btn-download:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4fb3ff 0%, #3399ff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 204, 255, 0.4);
+}
+
+.btn-download:disabled {
+  background: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-download.is-loading {
+  background: linear-gradient(135deg, #94c8e8 0%, #8ab8d8 100%);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: wait;
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .btn-secondary {
@@ -1087,8 +1320,14 @@ watch(isThinking, (newVal) => {
   color: #475569;
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   background: #cbd5e1;
+}
+
+.btn-secondary:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 
 .btn-danger {
@@ -1302,6 +1541,176 @@ watch(isThinking, (newVal) => {
   40% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+/* 构建动画样式 */
+.building-state {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%);
+}
+
+.building-icon-wrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 28px;
+}
+
+.building-gear {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  animation: spin 3s linear infinite;
+}
+
+.building-box {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 48px;
+  height: 48px;
+  color: #475569;
+  animation: boxPulse 2s ease-in-out infinite;
+}
+
+.building-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px;
+}
+
+.building-hint {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 32px;
+}
+
+.building-progress-bar {
+  width: 240px;
+  height: 6px;
+  background: rgba(102, 204, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.building-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #66ccff 0%, #22c55e 100%);
+  animation: progressFill 9.5s ease-in-out forwards;
+}
+
+.building-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.building-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  transition: all 0.3s ease;
+}
+
+.step-dot.active {
+  background: linear-gradient(135deg, #66ccff, #22c55e);
+  box-shadow: 0 0 8px rgba(102, 204, 255, 0.4);
+}
+
+.step-dot.pulse {
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+.step-text {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.step-text.active {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.building-step-line {
+  width: 40px;
+  height: 2px;
+  background: #cbd5e1;
+  margin: 0 8px;
+  margin-bottom: 24px;
+  border-radius: 1px;
+  transition: background 0.3s ease;
+}
+
+.building-step-line.active {
+  background: linear-gradient(90deg, #66ccff, #22c55e);
+}
+
+@keyframes progressFill {
+  0% {
+    width: 0%;
+  }
+  20% {
+    width: 25%;
+  }
+  50% {
+    width: 55%;
+  }
+  80% {
+    width: 80%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes boxPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.85;
+  }
+}
+
+@keyframes dotPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(102, 204, 255, 0.4);
+  }
+  50% {
+    transform: scale(1.3);
+    box-shadow: 0 0 16px rgba(102, 204, 255, 0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .building-gear,
+  .building-box,
+  .building-progress-fill,
+  .step-dot.pulse {
+    animation: none;
+  }
+  .building-progress-fill {
+    width: 80%;
   }
 }
 

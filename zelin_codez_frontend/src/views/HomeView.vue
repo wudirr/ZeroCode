@@ -22,52 +22,39 @@
 
         <div class="chat-input-wrapper">
           <div class="input-box">
-            <div class="input-content">
-              <div class="input-main">
-                <SparklesIcon class="input-icon" />
-                <textarea
-                  v-model="prompt"
-                  placeholder="描述你想要的应用..."
-                  class="custom-textarea"
-                  rows="3"
-                  @keydown.enter="handleCreateApp"
-                ></textarea>
-              </div>
-              <div class="input-footer">
-                <div class="input-footer-left">
-                  <a-select v-model:value="codeGenType" class="type-select">
-                    <a-select-option value="html">HTML</a-select-option>
-                    <a-select-option value="multi_file">多文件</a-select-option>
-                    <a-select-option value="vue_project">vue项目</a-select-option>
-                  </a-select>
-                </div>
-                <div class="input-footer-right">
-                  <a-button
-                    type="primary"
-                    :loading="creating"
-                    :disabled="!prompt.trim()"
-                    @click="handleCreateApp"
-                    class="create-btn-circle"
-                    :class="{ 'has-content': prompt.trim() }"
+            <div class="input-main">
+              <SparklesIcon class="input-icon" />
+              <textarea
+                v-model="prompt"
+                placeholder="描述你想要的应用..."
+                class="custom-textarea"
+                rows="3"
+                @keydown.enter="handleCreateApp"
+              ></textarea>
+              <a-button
+                type="primary"
+                :loading="creating"
+                :disabled="!prompt.trim()"
+                @click="handleCreateApp"
+                class="create-btn-circle"
+                :class="{ 'has-content': prompt.trim() }"
+              >
+                <template #icon>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="arrow-up-icon"
+                    :class="{ active: prompt.trim() }"
                   >
-                    <template #icon>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="arrow-up-icon"
-                        :class="{ active: prompt.trim() }"
-                      >
-                        <path d="M12 19V5M5 12l7-7 7 7" />
-                      </svg>
-                    </template>
-                  </a-button>
-                </div>
-              </div>
+                    <path d="M12 19V5M5 12l7-7 7 7" />
+                  </svg>
+                </template>
+              </a-button>
             </div>
           </div>
 
@@ -182,7 +169,6 @@ const router = useRouter()
 const userLoginStore = useUserLoginStore()
 
 const prompt = ref('')
-const codeGenType = ref('html')
 const creating = ref(false)
 const myApps = ref<API.AppVO[]>([])
 const featuredApps = ref<API.AppVO[]>([])
@@ -468,7 +454,6 @@ const handleCreateApp = async () => {
   try {
     const res = await addApp({
       initPrompt: prompt.value,
-      codeGenType: codeGenType.value,
     })
     if (res.code === 200 && res.data) {
       message.success('应用创建成功')
@@ -681,14 +666,8 @@ onMounted(() => {
   box-shadow: 0 8px 32px rgba(102, 204, 255, 0.15);
 }
 
-.input-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
 .input-main {
-  flex: 1;
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -718,27 +697,12 @@ onMounted(() => {
   font-family: inherit;
   display: block;
   padding: 0;
+  padding-right: 56px;
+  box-sizing: border-box;
 }
 
 .custom-textarea::placeholder {
   color: #a0aec0;
-}
-
-.input-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 8px;
-}
-
-.input-footer-left {
-  display: flex;
-}
-
-.input-footer-right {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
 }
 
 .input-actions {
@@ -755,54 +719,14 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.5) !important;
 }
 
-.input-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 12px;
-}
-
-.type-select {
-  width: 120px;
-}
-
-.type-select :deep(.ant-select-selector) {
-  background: rgba(255, 255, 255, 0.9) !important;
-  border: 1px solid rgba(102, 204, 255, 0.4) !important;
-  border-radius: 12px !important;
-  color: #1a1a2e !important;
-}
-
-.type-select :deep(.ant-select-selection-item) {
-  color: #1a1a2e !important;
-}
-
-.type-select :deep(.ant-select-arrow) {
-  color: #66ccff !important;
-}
-
-.type-select :deep(.ant-select-dropdown) {
-  background: rgba(255, 255, 255, 0.98) !important;
-  backdrop-filter: blur(12px);
-}
-
-.type-select :deep(.ant-select-item) {
-  color: #4a5568 !important;
-}
-
-.type-select :deep(.ant-select-item-option-active) {
-  background: rgba(102, 204, 255, 0.1) !important;
-}
-
-.type-select :deep(.ant-select-item-option-selected) {
-  background: rgba(102, 204, 255, 0.2) !important;
-}
-
 .input-icon {
   color: #66ccff;
 }
 
 .create-btn-circle {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
   width: 44px;
   height: 44px;
   padding: 0;
@@ -812,6 +736,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1;
+  flex-shrink: 0;
 }
 
 .create-btn-circle:hover {
