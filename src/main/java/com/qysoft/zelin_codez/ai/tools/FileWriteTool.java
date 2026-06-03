@@ -1,5 +1,7 @@
 package com.qysoft.zelin_codez.ai.tools;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.json.JSONObject;
 import com.qysoft.zelin_codez.common.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
@@ -17,7 +19,7 @@ import java.nio.file.StandardOpenOption;
  * @Date 2026/5/21 10:10
  **/
 @Slf4j
-public class FileWriteTool {
+public class FileWriteTool extends BaseTool{
 
     @Tool("将文件写入指定的路径")
     public String writeFile(@P("文件相对路径") String relativeFilePath,
@@ -45,4 +47,26 @@ public class FileWriteTool {
         }
     }
 
+    @Override
+    public String getToolName() {
+        return "writeFile";
+    }
+
+    @Override
+    public String getToolDesc() {
+        return "写入文件";
+    }
+
+    @Override
+    public String getToolRequestResponse(JSONObject arguments) {
+        String relativeFilePath = arguments.getStr("relativeFilePath");
+        String suffix = FileUtil.getSuffix(relativeFilePath);
+        String content = arguments.getStr("content");
+        return String.format("""
+                [工具调用] %s %s
+                ```%s
+                %s
+                ```
+                """, this.getToolDesc(), relativeFilePath, suffix, content);
+    }
 }

@@ -4,6 +4,8 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.qysoft.zelin_codez.ai.message.*;
+import com.qysoft.zelin_codez.ai.tools.BaseTool;
+import com.qysoft.zelin_codez.ai.tools.ToolManager;
 import com.qysoft.zelin_codez.common.constant.AppConstant;
 import com.qysoft.zelin_codez.common.enums.ChatHistoryMessageTypeEnum;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
@@ -13,6 +15,7 @@ import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.service.ChatHistoryService;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.codec.ServerSentEvent;
@@ -32,6 +35,9 @@ import java.util.concurrent.CompletableFuture;
  **/
 @Slf4j
 public class JsonMessageStreamHandler {
+
+    @Resource
+    private ToolManager toolManager;
 
     public Flux<ServerSentEvent<String>> handler(Long appId, User loginUser, Flux<String> result, ChatHistoryService chatHistoryService) {
         StringBuilder stringBuilder = new StringBuilder();
@@ -96,7 +102,8 @@ public class JsonMessageStreamHandler {
                 if (StringUtils.isNotBlank(toolId) && !toolIds.contains(toolId)) {
                     //这个时候将这个工具调用请求的id添加进来,说明是一次新的工具调用请求
                     toolIds.add(toolId);
-                    return "\n\n[选择工具]写入文件\n\n";
+                    String toolName = toolExecutionRequestMessage.getName();
+                    return toolManager.getTool(toolName).getToolRequestResult();
                 } else {
                     return "";
                 }
@@ -115,12 +122,9 @@ public class JsonMessageStreamHandler {
                     String content = jsonObject.getStr("content");
                     if (StringUtils.isBlank(content)) return "";
                     //构建返回结果
-                    String result = String.format("""
-                            [工具调用]写入文件%s
-                            ```%s
-                            %s
-                            ```
-                            """, relativeFilePath, suffix, content);
+                    String toolName = toolExecutedRequestMessage.getName();
+                    BaseTool tool = toolManager.getTool(toolName);
+                    String result = tool.getToolRequestResponse(jsonObject);
                     String output = String.format("\n\n%s\n\n", result);
                     stringBuilder.append(output);
                     return output;
