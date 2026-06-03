@@ -3,6 +3,7 @@ package com.qysoft.zelin_codez.ai;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.qysoft.zelin_codez.ai.tools.FileWriteTool;
+import com.qysoft.zelin_codez.ai.tools.ToolManager;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.service.ChatHistoryService;
@@ -43,6 +44,9 @@ public class AiCodeGeneratorServiceFactory {
     @Resource
     @Lazy
     private ChatHistoryService chatHistoryService;
+
+    @Resource
+    private ToolManager toolManager;
 
     /**
      * caffeine缓存对象
@@ -94,7 +98,7 @@ public class AiCodeGeneratorServiceFactory {
                     .chatModel(chatModel)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
+                    .tools((Object[]) toolManager.getTools())
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(toolExecutionRequest, "ERROR EXECUTE TOOLS" + toolExecutionRequest.name()))
                     .build();
             case HTML, MULTI_FILE -> AiServices.builder(AiCodeGeneratorService.class)
