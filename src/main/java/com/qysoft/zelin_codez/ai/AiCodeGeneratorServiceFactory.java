@@ -2,7 +2,6 @@ package com.qysoft.zelin_codez.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.qysoft.zelin_codez.ai.tools.FileWriteTool;
 import com.qysoft.zelin_codez.ai.tools.ToolManager;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.exception.BusinessException;
@@ -89,10 +88,10 @@ public class AiCodeGeneratorServiceFactory {
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder()
                 .chatMemoryStore(redisChatMemoryStore)
                 .id(appId)
-                .maxMessages(20)
+                .maxMessages(30)
                 .build();
         //从数据库中读取历史数据刷新缓存
-        chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
+        chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 30);
         return switch (codeGenTypeEnum) {
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
                     .chatModel(chatModel)
