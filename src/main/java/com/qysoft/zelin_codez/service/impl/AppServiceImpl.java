@@ -68,6 +68,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Resource
     private ScreenShotService screenShotService;
 
+    @Resource
+    private StreamMessageHandlerExecutor streamMessageHandlerExecutor;
+
     @Override
     public AppVO getAppVO(App app) {
         if (app == null) {
@@ -148,7 +151,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         //调用AI服务生成代码
         Flux<String> result = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, codeGenTypeEnum, app.getId());
-        return StreamMessageHandlerExecutor.messageHandler(appId, loginUser, result, chatHistoryService, codeGenTypeEnum);
+        return streamMessageHandlerExecutor.messageHandler(appId, loginUser, result, chatHistoryService, codeGenTypeEnum);
     }
 
     @Override

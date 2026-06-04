@@ -1,6 +1,5 @@
 package com.qysoft.zelin_codez.core.handler;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.qysoft.zelin_codez.ai.message.*;
@@ -18,6 +17,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -33,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
  * @Date 2026/5/25 22:24
  **/
 @Slf4j
+@Component
 public class JsonMessageStreamHandler {
 
     @Resource
@@ -113,12 +114,6 @@ public class JsonMessageStreamHandler {
                     if (StringUtils.isBlank(arguments)) return "";
                     //这个时候解析arguments,拿到里面的参数
                     JSONObject jsonObject = JSONUtil.parseObj(arguments);
-                    String relativeFilePath = jsonObject.getStr("relativeFilePath");
-                    //拿到后缀
-                    String suffix = FileUtil.getSuffix(relativeFilePath);
-                    if (StringUtils.isBlank(suffix)) return "";
-                    String content = jsonObject.getStr("content");
-                    if (StringUtils.isBlank(content)) return "";
                     //构建返回结果
                     String toolName = toolExecutedRequestMessage.getName();
                     BaseTool tool = toolManager.getTool(toolName);
