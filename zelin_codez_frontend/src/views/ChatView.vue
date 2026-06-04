@@ -113,12 +113,23 @@
             </div>
           </div>
         </div>
+        <ElementInfoBar
+          v-if="visualEditor.selectedElements.value.length > 0"
+          :elements="visualEditor.selectedElements.value"
+          @remove="visualEditor.removeElement"
+          @clear="visualEditor.clearSelection"
+        />
         <div class="input-section">
           <input
             v-model="userInput"
             @keyup.enter="sendMessage"
             placeholder="输入您的消息..."
             class="message-input"
+          />
+          <EditModeButton
+            :disabled="!previewUrl || isThinking"
+            :is-edit-mode="visualEditor.isEditMode.value"
+            @toggle="visualEditor.toggleEditMode"
           />
           <button @click="sendMessage" :disabled="!userInput.trim() || isThinking" class="send-btn">
             发送
@@ -217,6 +228,7 @@
           :key="'preview-' + previewVersion"
           :src="previewUrl"
           class="preview-iframe"
+          :ref="visualEditor.setIframeRef"
         ></iframe>
         <!-- Vue 项目构建中动画 -->
         <div v-else-if="isBuilding" class="preview-empty building-state">
@@ -362,12 +374,19 @@ import { getApp, deployApp, deleteApp as deleteAppApi } from '@/api/appControlle
 import { listAppChatHistory } from '@/api/chatHistoryController'
 import { useUserLoginStore } from '@/stores/UserLoginStore'
 import { message } from 'ant-design-vue'
+import { useVisualEditor } from '@/composables/useVisualEditor'
+import EditModeButton from '@/components/VisualEditor/EditModeButton.vue'
+import ElementInfoBar from '@/components/VisualEditor/ElementInfoBar.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userLoginStore = useUserLoginStore()
 
+const visualEditor = useVisualEditor()
+
 const BACKEND_BASE_URL = 'http://localhost:8123'
+// iframe 预览使用相对路径，通过 Vite 代理转发，确保与主页面同源
+const PREVIEW_BASE_URL = ''
 const appId = ref<string>(route.params.appId as string)
 const appDetail = ref<API.AppVO>({})
 
@@ -702,10 +721,10 @@ const sendPromptToAI = async (userMessage: string) => {
           '\n\nVue 项目代码已生成，正在构建项目...'
         await sleep(10000)
         isBuilding.value = false
-        previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/dist/index.html`
+        previewUrl.value = `${PREVIEW_BASE_URL}/api/static/${deployKey}/dist/index.html`
         console.log(`预览地址: ${previewUrl.value}`)
       } else {
-        previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/`
+        previewUrl.value = `${PREVIEW_BASE_URL}/api/static/${deployKey}/`
       }
       previewVersion.value++
       aiMessage.content +=
@@ -733,7 +752,9 @@ const sendInitialPrompt = async (initPrompt: string) => {
 // 用户发送消息
 const sendMessage = async () => {
   if (!userInput.value.trim()) return
-  await sendPromptToAI(userInput.value.trim())
+  const enhancedMessage = visualEditor.enhanceMessage(userInput.value.trim())
+  visualEditor.cleanupAfterSend()
+  await sendPromptToAI(enhancedMessage)
 }
 
 const loadChatHistory = async (loadMore = false) => {
@@ -818,9 +839,9 @@ onMounted(async () => {
       const generationType = appDetail.value.codeGenType || 'html'
       const deployKey = `${generationType}_${appId.value}`;
       if (generationType === 'vue_project') {
-        previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/dist/index.html`
+        previewUrl.value = `${PREVIEW_BASE_URL}/api/static/${deployKey}/dist/index.html`
       } else {
-        previewUrl.value = `${BACKEND_BASE_URL}/api/static/${deployKey}/`
+        previewUrl.value = `${PREVIEW_BASE_URL}/api/static/${deployKey}/`
       }
       previewVersion.value++
     }
@@ -841,6 +862,7 @@ onMounted(async () => {
 onUnmounted(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange)
   document.documentElement.classList.remove('hide-scroll')
+  visualEditor.cleanup()
 })
 
 watch(isThinking, (newVal) => {
@@ -861,6 +883,12 @@ watch(isBuilding, (newVal) => {
     statusText.value = '构建完成'
     statusHint.value = '您可以在右侧查看生成的代码效果'
   }
+})
+
+watch(previewVersion, () => {
+  nextTick(() => {
+    visualEditor.reInjectIfNeeded()
+  })
 })
 </script>
 <style scoped>
