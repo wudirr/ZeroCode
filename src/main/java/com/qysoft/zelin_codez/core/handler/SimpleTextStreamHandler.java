@@ -6,6 +6,7 @@ import com.qysoft.zelin_codez.domain.entity.User;
 import com.qysoft.zelin_codez.service.ChatHistoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -18,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
  * @Date 2026/5/25 22:23
  **/
 @Slf4j
+@Component
 public class SimpleTextStreamHandler {
 
     public Flux<ServerSentEvent<String>> handler(Long appId, User loginUser, Flux<String> result, ChatHistoryService chatHistoryService) {
