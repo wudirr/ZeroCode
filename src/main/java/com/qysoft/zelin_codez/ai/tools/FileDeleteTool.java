@@ -4,7 +4,7 @@ import cn.hutool.json.JSONObject;
 import com.qysoft.zelin_codez.common.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
-import dev.langchain4j.service.MemoryId;
+import dev.langchain4j.agent.tool.ToolMemoryId;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -20,49 +20,49 @@ import java.nio.file.Paths;
  **/
 @Slf4j
 @Component
-public class FileDeleteTool extends BaseTool{
+public class FileDeleteTool extends BaseTool {
 
     /**
      * 重要的文件列表
      */
     private static final String[] importantFiles = {
-            "package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml","vite.config.js", "vite.config.ts", "vue.config.js",
+            "package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "vite.config.js", "vite.config.ts", "vue.config.js",
             "tsconfig.json", "tsconfig.app.json", "tsconfig.node.json",
-            "index.html","main.js","main.ts","App.vue",".gitignore","README.md"
+            "index.html", "main.js", "main.ts", "App.vue", ".gitignore", "README.md"
     };
 
     /**
      * 删除文件工具
      *
      * @param relativeFilePath 文件相对路径
-     * @param appId 应用id
+     * @param appId            应用id
      * @return 删除文件信息
      */
     @Tool("删除指定的文件工具")
-    public String deleteFile(@P("文件的相对路径") String relativeFilePath, @MemoryId Long appId) {
-        try{
+    public String deleteFile(@P("文件的相对路径") String relativeFilePath, @ToolMemoryId Long appId) {
+        try {
             Path path = Paths.get(relativeFilePath);
-            if(!path.isAbsolute()){
+            if (!path.isAbsolute()) {
                 String fileName = String.format("%s_%s", "vue_project", appId.toString());
-                Path projectPath = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR,fileName);
+                Path projectPath = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, fileName);
                 path = projectPath.resolve(relativeFilePath);
             }
-            if(!Files.exists(path)){
+            if (!Files.exists(path)) {
                 return "警告-文件不存在,删除文件失败,相对路径: " + relativeFilePath;
             }
-            if(!Files.isRegularFile(path)){
+            if (!Files.isRegularFile(path)) {
                 return "警告-删除的文件不是一个普通的文件,删除文件失败,相对路径: " + relativeFilePath;
             }
             //安全检查,防止删除重要的文件
             File file = path.toFile();
             boolean flag = isImportantFile(file.getName());
-            if(flag){
+            if (flag) {
                 return "警告-该文件不允许删除,删除文件失败,相对路径: " + relativeFilePath;
             }
             Files.delete(path);
             log.info("删除文件:{}成功", relativeFilePath);
             return "删除文件成功,相对路径: " + relativeFilePath;
-        }catch(Exception e){
+        } catch (Exception e) {
             String errorMessage = String.format("删除文件失败,相对路径:%s,失败原因:%s", relativeFilePath, e.getMessage());
             log.error(errorMessage);
             return errorMessage;
@@ -97,6 +97,6 @@ public class FileDeleteTool extends BaseTool{
     @Override
     public String getToolRequestResponse(JSONObject arguments) {
         String relativeFilePath = arguments.getStr("relativeFilePath");
-        return String.format("[工具调用] %s %s", this.getToolDesc(),relativeFilePath);
+        return String.format("[工具调用] %s %s", this.getToolDesc(), relativeFilePath);
     }
 }

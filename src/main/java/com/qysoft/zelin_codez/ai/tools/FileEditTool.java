@@ -5,11 +5,10 @@ import cn.hutool.json.JSONObject;
 import com.qysoft.zelin_codez.common.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
-import dev.langchain4j.service.MemoryId;
+import dev.langchain4j.agent.tool.ToolMemoryId;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,48 +21,48 @@ import java.nio.file.StandardOpenOption;
  **/
 @Slf4j
 @Component
-public class FileEditTool extends BaseTool{
+public class FileEditTool extends BaseTool {
 
     /**
      * 修改文件工具
      *
      * @param relativeFilePath 文件相对路径
-     * @param oldContent 修改之前的内容
-     * @param newContent 修改之后的内容
-     * @param appId 应用id
+     * @param oldContent       修改之前的内容
+     * @param newContent       修改之后的内容
+     * @param appId            应用id
      * @return 修改信息
      */
     @Tool("修改指定路径的文件内容")
     public String editFile(@P("文件相对路径") String relativeFilePath,
                            @P("修改之前的内容") String oldContent,
                            @P("修改的新内容") String newContent,
-                           @MemoryId Long appId){
-        try{
+                           @ToolMemoryId Long appId) {
+        try {
             Path path = Paths.get(relativeFilePath);
-            if(!path.isAbsolute()){
+            if (!path.isAbsolute()) {
                 String fileName = String.format("%s_%s", "vue_project", appId.toString());
-                Path projectPath = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR,fileName);
+                Path projectPath = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, fileName);
                 path = projectPath.resolve(relativeFilePath);
             }
-            if(!Files.exists(path)){
+            if (!Files.exists(path)) {
                 return "警告-文件不存在,修改文件失败,相对路径: " + relativeFilePath;
             }
-            if(!Files.isRegularFile(path)){
+            if (!Files.isRegularFile(path)) {
                 return "警告-修改的文件不是一个普通的文件,修改文件失败,相对路径: " + relativeFilePath;
             }
             String content = Files.readString(path);
-            if(!content.contains(oldContent)){
+            if (!content.contains(oldContent)) {
                 return "修改的内容不存在,相对路径: " + relativeFilePath;
             }
             //替换内容
             String replaceContent = content.replace(oldContent, newContent);
-            if(replaceContent.equals(content)){
+            if (replaceContent.equals(content)) {
                 return "文件修改后的内容与原文件相同,相对路径: " + relativeFilePath;
             }
             Files.writeString(path, replaceContent, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             log.info("文件修改成功,相对路径: {}", relativeFilePath);
             return String.format("文件修改成功,相对路径: %s,修改后的内容: %s", relativeFilePath, replaceContent);
-        }catch(Exception e){
+        } catch (Exception e) {
             String errorMessage = String.format("修改文件失败,相对路径:%s,失败原因:%s", relativeFilePath, e.getMessage());
             log.error(errorMessage);
             return errorMessage;
@@ -88,16 +87,16 @@ public class FileEditTool extends BaseTool{
         String suffix = FileUtil.getSuffix(relativeFilePath);
         return String.format("""
                 [工具调用] %s %s
-                
+                                
                 替换前:
                 ``` %s
                 %s
                 ```
-                
+                                
                 替换后:
                 ``` %s
                 %s
                 ```
-                """,this.getToolDesc(),relativeFilePath,suffix,oldContent,suffix,newContent);
+                """, this.getToolDesc(), relativeFilePath, suffix, oldContent, suffix, newContent);
     }
 }
