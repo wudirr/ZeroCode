@@ -23,7 +23,7 @@ public class ReasoningStreamingChatModelConfig {
 
     @Bean
     public StreamingChatModel reasoningStreamingChatModel() {
-        final String MODEL_NAME = "deepseek-v4-pro";
+        final String MODEL_NAME = "glm-5.1";
         final int MAX_TOKENS = 50000;
         return OpenAiStreamingChatModel.builder()
                 .baseUrl(baseUrl)

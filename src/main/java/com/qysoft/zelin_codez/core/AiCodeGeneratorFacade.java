@@ -14,14 +14,12 @@ import com.qysoft.zelin_codez.core.saver.CodeFileSaverExecutor;
 import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
-import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.service.TokenStream;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
@@ -70,14 +68,14 @@ public class AiCodeGeneratorFacade {
      */
     public Flux<String> generateAndSaveCodeStream(String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
         ThrowUtils.throwIf(StringUtils.isBlank(userMessage) || codeGenTypeEnum == null, ErrorCode.PARAMS_ERROR);
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiService(appId,codeGenTypeEnum);
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiService(appId, codeGenTypeEnum);
         return switch (codeGenTypeEnum) {
             case HTML ->
                     processCodeStream(aiCodeGeneratorService.generateHtmlCodeStream(userMessage), codeGenTypeEnum, appId);
             case MULTI_FILE ->
                     processCodeStream(aiCodeGeneratorService.generateMultiFileCodeStream(userMessage), codeGenTypeEnum, appId);
             case VUE_PROJECT ->
-                    processCodeStream(aiCodeGeneratorService.generateVueProjectCodeStream(appId,userMessage));
+                    processCodeStream(aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage));
             default -> throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的代码生成类型");
         };
     }
@@ -89,18 +87,19 @@ public class AiCodeGeneratorFacade {
         StringBuilder stringBuilder = new StringBuilder();
         return result.doOnNext(stringBuilder::append).doOnComplete(() -> {
             CompletableFuture.runAsync(() -> {
-                try {
-                    String content = stringBuilder.toString();
-                    Object codeResult = CodeParserExecutor.coderParser(content, codeGenTypeEnum);
-                    //保存代码
-                    File file = CodeFileSaverExecutor.saveCode(codeResult, codeGenTypeEnum, appId);
-                    log.info("保存html文件成功,文件路径:{}", file.getAbsolutePath());
-                } catch (Exception e) {
-                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件保存失败");
-                }
+                String content = stringBuilder.toString();
+                Object codeResult = CodeParserExecutor.coderParser(content, codeGenTypeEnum);
+                //保存代码
+                File file = CodeFileSaverExecutor.saveCode(codeResult, codeGenTypeEnum, appId);
+                log.info("保存html文件成功,文件路径:{}", file.getAbsolutePath());
             }).exceptionally(e -> {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件保存失败");
             });
+            /*String content = stringBuilder.toString();
+            Object codeResult = CodeParserExecutor.coderParser(content, codeGenTypeEnum);
+            //保存代码
+            File file = CodeFileSaverExecutor.saveCode(codeResult, codeGenTypeEnum, appId);
+            log.info("保存html文件成功,文件路径:{}", file.getAbsolutePath());*/
         });
     }
 
@@ -118,7 +117,7 @@ public class AiCodeGeneratorFacade {
             }).onCompleteResponse(completeResponse -> {
                 sink.complete();
             }).onError(e -> {
-                log.error("处理流式输出失败",e);
+                log.error("处理流式输出失败", e);
                 sink.error(e);
             }).start();
         });
