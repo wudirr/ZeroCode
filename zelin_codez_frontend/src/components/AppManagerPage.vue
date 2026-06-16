@@ -19,118 +19,74 @@
 
       <!-- 搜索区域 -->
       <div class="search-section">
-        <input
-          v-model="searchParams.appName"
-          type="text"
-          placeholder="应用名称"
-          class="search-input-inline"
-          @keyup.enter="handleSearch"
-        />
+        <input v-model="searchParams.appName" type="text" placeholder="应用名称" class="search-input-inline"
+          @keyup.enter="handleSearch" />
         <div class="custom-select" :class="{ 'is-open': openDropdown === 'codeGenType' }">
-          <div
-            class="select-trigger"
-            :class="{ 'has-value': searchParams.codeGenType }"
-            @click="toggleDropdown('codeGenType')"
-          >
+          <div class="select-trigger" :class="{ 'has-value': searchParams.codeGenType }"
+            @click="toggleDropdown('codeGenType')">
             <span class="select-value">{{
               getLabel('codeGenType', searchParams.codeGenType) || '代码类型'
-            }}</span>
+              }}</span>
             <span class="select-arrow"></span>
           </div>
           <div class="select-dropdown">
-            <div
-              class="select-option"
-              :class="{ 'is-selected': searchParams.codeGenType === 'html' }"
-              @click="selectOption('codeGenType', 'html')"
-            >
+            <div class="select-option" :class="{ 'is-selected': searchParams.codeGenType === 'html' }"
+              @click="selectOption('codeGenType', 'html')">
               HTML
             </div>
-            <div
-              class="select-option"
-              :class="{ 'is-selected': searchParams.codeGenType === 'multi_file' }"
-              @click="selectOption('codeGenType', 'multi_file')"
-            >
+            <div class="select-option" :class="{ 'is-selected': searchParams.codeGenType === 'multi_file' }"
+              @click="selectOption('codeGenType', 'multi_file')">
               多文件
             </div>
           </div>
         </div>
         <div class="custom-select" :class="{ 'is-open': openDropdown === 'priority' }">
-          <div
-            class="select-trigger"
-            :class="{ 'has-value': searchParams.priority === 0 || searchParams.priority }"
-            @click="toggleDropdown('priority')"
-          >
+          <div class="select-trigger" :class="{ 'has-value': searchParams.priority === 0 || searchParams.priority }"
+            @click="toggleDropdown('priority')">
             <span class="select-value">{{
               getLabel('priority', searchParams.priority) || '作品等级'
-            }}</span>
+              }}</span>
             <span class="select-arrow"></span>
           </div>
           <div class="select-dropdown">
-            <div
-              class="select-option"
-              :class="{ 'is-selected': searchParams.priority === 0 }"
-              @click="selectOption('priority', 0)"
-            >
+            <div class="select-option" :class="{ 'is-selected': searchParams.priority === 0 }"
+              @click="selectOption('priority', 0)">
               普通
             </div>
-            <div
-              class="select-option"
-              :class="{ 'is-selected': searchParams.priority === 99 }"
-              @click="selectOption('priority', 99)"
-            >
+            <div class="select-option" :class="{ 'is-selected': searchParams.priority === 99 }"
+              @click="selectOption('priority', 99)">
               精选
             </div>
           </div>
         </div>
         <div class="custom-select" :class="{ 'is-open': openDropdown === 'deployStatus' }">
-          <div
-            class="select-trigger"
-            :class="{ 'has-value': deployStatus }"
-            @click="toggleDropdown('deployStatus')"
-          >
+          <div class="select-trigger" :class="{ 'has-value': deployStatus }" @click="toggleDropdown('deployStatus')">
             <span class="select-value">{{
               getLabel('deployStatus', deployStatus) || '部署状态'
-            }}</span>
+              }}</span>
             <span class="select-arrow"></span>
           </div>
           <div class="select-dropdown">
-            <div
-              class="select-option"
-              :class="{ 'is-selected': deployStatus === 'deployed' }"
-              @click="selectOption('deployStatus', 'deployed')"
-            >
+            <div class="select-option" :class="{ 'is-selected': deployStatus === 'deployed' }"
+              @click="selectOption('deployStatus', 'deployed')">
               已部署
             </div>
-            <div
-              class="select-option"
-              :class="{ 'is-selected': deployStatus === 'not_deployed' }"
-              @click="selectOption('deployStatus', 'not_deployed')"
-            >
+            <div class="select-option" :class="{ 'is-selected': deployStatus === 'not_deployed' }"
+              @click="selectOption('deployStatus', 'not_deployed')">
               未部署
             </div>
           </div>
         </div>
-        <input
-          v-model="searchParams.userName"
-          type="text"
-          placeholder="创建者"
-          class="search-input-inline"
-          @keyup.enter="handleSearch"
-        />
+        <input v-model="searchParams.userName" type="text" placeholder="创建者" class="search-input-inline"
+          @keyup.enter="handleSearch" />
         <button class="btn-search" @click="handleSearch">搜索</button>
         <button class="btn-search" @click="handleReset">重置</button>
       </div>
 
       <!-- 表格区域 -->
       <div class="table-section">
-        <CustomTable
-          :columns="columns"
-          :data="data"
-          :total="total"
-          :page-num="params.pageNum"
-          :page-size="params.pageSize"
-          @change="onChange"
-        >
+        <CustomTable :columns="columns" :data="data" :total="total" :page-num="params.pageNum"
+          :page-size="params.pageSize" @change="onChange">
           <template #cover="{ row }">
             <img v-if="row.cover" :src="row.cover" class="cover-img" />
             <div v-else class="cover-placeholder">
@@ -138,17 +94,14 @@
             </div>
           </template>
           <template #codeGenType="{ row }">
-            <span class="tag" :class="row.codeGenType === 'multi_file' ? 'tag-multi' : 'tag-html'">
+            <span class="tag" :class="row.codeGenType === 'multi_file' ? 'tag-multi' : row.codeGenType === 'html' ? 'tag-html' : row.codeGenType === 'vue_project' ? 'tag-vue' : 'tag-html'">
               <FolderOutlined v-if="row.codeGenType === 'multi_file'" />
               <FileTextOutlined v-else />
-              {{ row.codeGenType === 'multi_file' ? '多文件' : 'HTML' }}
+              {{ row.codeGenType === 'multi_file' ? '多文件' : row.codeGenType === 'html' ? 'HTML' : row.codeGenType === 'vue_project' ? 'Vue' : 'HTML' }}
             </span>
           </template>
           <template #priority="{ row }">
-            <span
-              class="priority-tag"
-              :class="row.priority === 99 ? 'priority-top' : 'priority-normal'"
-            >
+            <span class="priority-tag" :class="row.priority === 99 ? 'priority-top' : 'priority-normal'">
               {{ PriorityEnum[row.priority] || '普通' }}
             </span>
           </template>
@@ -170,11 +123,8 @@
               <button class="action-btn preview-btn" @click.stop="previewApp(row)">
                 <EyeOutlined /> 预览
               </button>
-              <button
-                class="action-btn featured-btn"
-                :class="{ 'is-featured': row.priority === 99 }"
-                @click.stop="toggleFeatured(row)"
-              >
+              <button class="action-btn featured-btn" :class="{ 'is-featured': row.priority === 99 }"
+                @click.stop="toggleFeatured(row)">
                 <StarOutlined />
                 {{ row.priority === 99 ? '取消精选' : '精选' }}
               </button>
@@ -225,7 +175,7 @@ const selectOption = (type: string, value: any) => {
 
 const getLabel = (type: string, value: any) => {
   if (type === 'codeGenType') {
-    return value === 'html' ? 'HTML' : value === 'multi_file' ? '多文件' : ''
+    return value === 'html' ? 'HTML' : value === 'multi_file' ? '多文件' : value === 'vue_project' ? 'Vue' : ''
   } else if (type === 'priority') {
     return value === 0 ? '普通' : value === 99 ? '精选' : ''
   } else if (type === 'deployStatus') {
@@ -374,7 +324,12 @@ const del = (id: number) => {
 
 const previewApp = (row: API.AppVO) => {
   const codeGenType = row.codeGenType || 'html'
-  const previewUrl = `http://localhost:8123/api/static/${codeGenType}_${row.id}/`
+  let previewUrl = '';
+  if (codeGenType === 'vue_project') {
+    previewUrl = `http://localhost:8123/api/static/${codeGenType}_${row.id}/dist/index.html`
+  } else {
+    previewUrl = `http://localhost:8123/api/static/${codeGenType}_${row.id}/`
+  }
   window.open(previewUrl, '_blank')
 }
 
@@ -450,10 +405,12 @@ load()
 }
 
 @keyframes float {
+
   0%,
   100% {
     transform: translate(0, 0) scale(1);
   }
+
   50% {
     transform: translate(30px, -30px) scale(1.05);
   }
@@ -680,6 +637,10 @@ load()
 .tag-html {
   background: linear-gradient(135deg, #fff3e0, #ffe0b2);
   color: #f57c00;
+}
+.tag-vue {
+  background: linear-gradient(135deg, #b4f1d2, #92efc2);
+  color: #0a8d64;
 }
 
 .tag-deployed {
