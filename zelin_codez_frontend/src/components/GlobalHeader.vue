@@ -85,11 +85,6 @@ const menuItems = ref([
     title: '首页',
   },
   {
-    key: '/about',
-    label: '关于',
-    title: '关于我们',
-  },
-  {
     key: '/admin/user/manage',
     label: '用户管理',
     title: '用户管理',
