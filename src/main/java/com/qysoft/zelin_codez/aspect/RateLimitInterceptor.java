@@ -4,7 +4,6 @@ import com.qysoft.zelin_codez.common.annotation.RateLimit;
 import com.qysoft.zelin_codez.domain.entity.User;
 import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.exception.ErrorCode;
-import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,8 +51,7 @@ public class RateLimitInterceptor {
         //获取限流器
         RRateLimiter rateLimiter = redissonClient.getRateLimiter(key);
         rateLimiter.expire(Duration.ofHours(1));
-        boolean flag = rateLimiter.trySetRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(rateLimit.rateInterval()));
-        ThrowUtils.throwIf(!flag, ErrorCode.SYSTEM_ERROR, "设置限流令牌失败");
+        rateLimiter.trySetRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(rateLimit.rateInterval()));
         final int RATE_NUMBER = 1;
         if (!rateLimiter.tryAcquire(RATE_NUMBER)) {
             throw new BusinessException(ErrorCode.TOO_MANY_REQUESTS, rateLimit.message());
