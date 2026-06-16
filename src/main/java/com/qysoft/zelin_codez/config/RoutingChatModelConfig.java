@@ -1,7 +1,7 @@
 package com.qysoft.zelin_codez.config;
 
-import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -11,14 +11,16 @@ import org.springframework.context.annotation.Scope;
 import java.time.Duration;
 
 /**
- * @Description 流式推理模型配置
- * @Author wudi
- * @Date 2026/5/21 10:18
- **/
+ * 代码类型路由大模型配置类
+ *
+ * @author qysoft
+ * @version 1.0
+ * @since 1.0
+ */
 @Configuration
-@ConfigurationProperties("langchain4j.open-ai.reasoning-streaming-chat-model")
+@ConfigurationProperties("langchain4j.open-ai.routing-chat-model")
 @Data
-public class ReasoningStreamingChatModelConfig {
+public class RoutingChatModelConfig {
 
     private String baseUrl;
 
@@ -35,14 +37,14 @@ public class ReasoningStreamingChatModelConfig {
     private Boolean logResponses;
 
     /**
-     * 流式推理大模型配置
+     * 路由代码生成类型大模型配置
      *
-     * @return 流式推理大模型
+     * @return 路由代码生成类型大模型
      */
     @Bean
     @Scope("prototype")
-    public StreamingChatModel reasoningStreamingChatModelPrototype() {
-        return OpenAiStreamingChatModel.builder()
+    public ChatModel routingChatModelPrototype() {
+        return OpenAiChatModel.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
                 .modelName(modelName)

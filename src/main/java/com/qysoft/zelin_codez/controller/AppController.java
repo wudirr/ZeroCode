@@ -4,11 +4,14 @@ import cn.hutool.core.io.FileUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.qysoft.zelin_codez.ai.AiCodeTypeRoutingGeneratorService;
+import com.qysoft.zelin_codez.ai.AiCodeTypeRoutingGeneratorServiceFactory;
 import com.qysoft.zelin_codez.common.DeleteRequest;
 import com.qysoft.zelin_codez.common.Result;
 import com.qysoft.zelin_codez.common.annotation.AuthCheck;
+import com.qysoft.zelin_codez.common.annotation.RateLimit;
 import com.qysoft.zelin_codez.common.constant.AppConstant;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
+import com.qysoft.zelin_codez.common.enums.RateLimitType;
 import com.qysoft.zelin_codez.common.enums.UserRoleEnum;
 import com.qysoft.zelin_codez.domain.entity.App;
 import com.qysoft.zelin_codez.domain.entity.User;
@@ -27,6 +30,7 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -55,7 +59,7 @@ public class AppController {
     private ProjectDownLoadService projectDownLoadService;
 
     @Resource
-    private AiCodeTypeRoutingGeneratorService aiCodeTypeRoutingGeneratorService;
+    private AiCodeTypeRoutingGeneratorServiceFactory aiCodeTypeRoutingGeneratorServiceFactory;
 
     /**
      * 用户创建应用
@@ -70,6 +74,7 @@ public class AppController {
         User loginUser = userService.getLoginUser(request);
         App app = new App();
         BeanUtils.copyProperties(appAddRequest, app);
+        AiCodeTypeRoutingGeneratorService aiCodeTypeRoutingGeneratorService = aiCodeTypeRoutingGeneratorServiceFactory.getAiCodeTypeRoutingGeneratorService();
         CodeGenTypeEnum codeGenTypeEnum = aiCodeTypeRoutingGeneratorService.routeCodeGenType(appAddRequest.getInitPrompt());
         //校验代码生成类型是否正确
         ThrowUtils.throwIf(codeGenTypeEnum == null, ErrorCode.PARAMS_ERROR, "不支持该类型");
@@ -171,6 +176,11 @@ public class AppController {
      * @return
      */
     @PostMapping("featured/page")
+    @Cacheable(
+            value = "good_app_page",
+            key = "T(com.qysoft.zelin_codez.common.utils.ObjectKeyUtil).buildKey(#appQueryRequest)",
+            condition = "#appQueryRequest.pageNum <= 10"
+    )
     public Result<Page<AppVO>> listFeaturedApp(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
         int pageSize = appQueryRequest.getPageSize();
@@ -282,8 +292,10 @@ public class AppController {
      * @param userMessage        用户消息
      * @param httpServletRequest 请求封装类
      * @return 流式输出
+     * @annotation rateLimit 限流注解
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60)
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId, @RequestParam String userMessage, HttpServletRequest httpServletRequest) {
         ThrowUtils.throwIf(appId == null || appId < 0, ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(StringUtils.isBlank(userMessage), ErrorCode.PARAMS_ERROR);

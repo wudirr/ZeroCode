@@ -11,14 +11,16 @@ import org.springframework.context.annotation.Scope;
 import java.time.Duration;
 
 /**
- * @Description 流式推理模型配置
- * @Author wudi
- * @Date 2026/5/21 10:18
- **/
+ * 流式大模型配置类
+ *
+ * @author qysoft
+ * @version 1.0
+ * @since 1.0
+ */
 @Configuration
-@ConfigurationProperties("langchain4j.open-ai.reasoning-streaming-chat-model")
+@ConfigurationProperties("langchain4j.open-ai.streaming-chat-model")
 @Data
-public class ReasoningStreamingChatModelConfig {
+public class StreamingChatModelConfig {
 
     private String baseUrl;
 
@@ -35,13 +37,13 @@ public class ReasoningStreamingChatModelConfig {
     private Boolean logResponses;
 
     /**
-     * 流式推理大模型配置
+     * 流式大模型配置
      *
-     * @return 流式推理大模型
+     * @return 流式大模型
      */
     @Bean
     @Scope("prototype")
-    public StreamingChatModel reasoningStreamingChatModelPrototype() {
+    public StreamingChatModel streamingChatModelPrototype() {
         return OpenAiStreamingChatModel.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)

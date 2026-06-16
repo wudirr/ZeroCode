@@ -1,6 +1,7 @@
 package com.qysoft.zelin_codez.langgraph4j.node;
 
 import com.qysoft.zelin_codez.ai.AiCodeTypeRoutingGeneratorService;
+import com.qysoft.zelin_codez.ai.AiCodeTypeRoutingGeneratorServiceFactory;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.common.utils.SpringContextUtil;
 import com.qysoft.zelin_codez.exception.BusinessException;
@@ -32,7 +33,8 @@ public class CodeRoutingNode {
                 WorkFlowContext context = WorkFlowContext.getContext(state);
                 //获取初始提示词
                 String initPrompt = context.getInitPrompt();
-                AiCodeTypeRoutingGeneratorService aiCodeTypeRoutingGeneratorService = SpringContextUtil.getBean(AiCodeTypeRoutingGeneratorService.class);
+                AiCodeTypeRoutingGeneratorServiceFactory aiCodeTypeRoutingGeneratorServiceFactory = SpringContextUtil.getBean("aiCodeTypeRoutingGeneratorServiceFactory", AiCodeTypeRoutingGeneratorServiceFactory.class);
+                AiCodeTypeRoutingGeneratorService aiCodeTypeRoutingGeneratorService = aiCodeTypeRoutingGeneratorServiceFactory.getAiCodeTypeRoutingGeneratorService();
                 CodeGenTypeEnum codeGenTypeEnum = aiCodeTypeRoutingGeneratorService.routeCodeGenType(initPrompt);
                 if (codeGenTypeEnum == null || CodeGenTypeEnum.getEnumByValue(codeGenTypeEnum.getValue()) == null) {
                     //采用降级策略
