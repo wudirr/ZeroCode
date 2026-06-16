@@ -686,6 +686,29 @@ const sendPromptToAI = async (userMessage: string) => {
     }
   })
 
+  source.addEventListener('business-error', async (event: MessageEvent) => {
+    isDone = true
+    closeSource()
+
+    let errorMessage = '请求出错，请稍后重试。'
+    try {
+      const parsed = JSON.parse(event.data)
+      errorMessage = parsed.message || errorMessage
+    } catch (err) {
+      errorMessage = event.data || errorMessage
+    }
+
+    // 复用当前"思考中"的 AI 消息气泡，替换为错误信息
+    const aiMessage = messages.value.find(
+      (msg) => msg.id === currentMarkdownId.value && msg.sender === 'ai',
+    )
+    if (aiMessage) {
+      aiMessage.isThinking = false
+      aiMessage.isMarkdown = false
+      aiMessage.content = errorMessage
+    }
+  })
+
   source.onerror = () => {
     closeSource()
     if (!isDone) {
@@ -719,7 +742,7 @@ const sendPromptToAI = async (userMessage: string) => {
         isBuilding.value = true
         aiMessage.content +=
           '\n\nVue 项目代码已生成，正在构建项目...'
-        await sleep(10000)
+        await sleep(25000)
         isBuilding.value = false
         previewUrl.value = `${PREVIEW_BASE_URL}/api/static/${deployKey}/dist/index.html`
         console.log(`预览地址: ${previewUrl.value}`)
@@ -1629,7 +1652,7 @@ watch(previewVersion, () => {
   height: 100%;
   border-radius: 3px;
   background: linear-gradient(90deg, #66ccff 0%, #22c55e 100%);
-  animation: progressFill 9.5s ease-in-out forwards;
+  animation: progressFill 24.5s ease-in-out forwards;
 }
 
 .building-steps {
