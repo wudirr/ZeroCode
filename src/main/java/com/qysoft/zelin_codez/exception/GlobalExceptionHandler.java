@@ -2,6 +2,7 @@ package com.qysoft.zelin_codez.exception;
 
 import cn.hutool.json.JSONUtil;
 import com.qysoft.zelin_codez.common.Result;
+import dev.langchain4j.guardrail.InputGuardrailException;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,6 +34,16 @@ public class GlobalExceptionHandler {
         }
         // 对于普通请求，返回标准 JSON 响应
         return Result.error(e.getCode(), e.getMessage());
+    }
+
+    @ExceptionHandler(InputGuardrailException.class)
+    public Result<?> inputGuardrailExceptionHandler(InputGuardrailException e) {
+        log.error("InputGuardrailException", e);
+        // 尝试处理 SSE 请求
+        if (handleSseError(ErrorCode.SYSTEM_ERROR.getCode(), e.getMessage().substring(e.getMessage().lastIndexOf(':') + 1))) {
+            return null;
+        }
+        return Result.error(ErrorCode.SYSTEM_ERROR, "系统错误");
     }
 
     @ExceptionHandler(RuntimeException.class)
