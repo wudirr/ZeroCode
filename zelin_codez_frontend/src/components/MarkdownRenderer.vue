@@ -8,10 +8,7 @@
 import MarkdownIt from 'markdown-it'
 import 'highlight.js/styles/a11y-light.css'
 import hljs from 'highlight.js'
-import { computed, watch, nextTick, ref } from 'vue'
-
-let highlightTimeout: any = null
-const isTyping = ref(false)
+import { computed } from 'vue'
 
 const md = new MarkdownIt({
   html: true,
@@ -41,25 +38,6 @@ const rendererHtml = computed(() => {
   if (!props.content) return ''
   return md.render(props.content)
 })
-
-watch(
-  () => props.content,
-  (newVal, oldVal) => {
-    if (!newVal) return
-
-    // 清除之前的定时器
-    if (highlightTimeout) clearTimeout(highlightTimeout)
-
-    // 内容稳定后高亮，避免连续输入时抖动
-    highlightTimeout = setTimeout(() => {
-      nextTick().then(() => {
-        document.querySelectorAll('.markdown-body pre code').forEach((el) => {
-          hljs.highlightElement(el)
-        })
-      })
-    }, 150)
-  },
-)
 </script>
 
 <style scoped>
