@@ -102,6 +102,18 @@
             <div class="message-content">
               <p v-if="!message.isMarkdown">{{ message.content }}</p>
               <MarkdownRenderer v-if="message.isMarkdown" :content="message.content" />
+              <!-- 流式输出间隔时的"持续处理"指示器 -->
+              <div
+                v-if="message.id === currentMarkdownId && isProcessing && !message.isThinking"
+                class="processing-indicator"
+              >
+                <span class="processing-text">正在调用工具，请稍候...</span>
+                <div class="dots">
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                </div>
+              </div>
               <div v-if="message.isThinking" class="thinking">
                 <span class="thinking-text">{{ thinkingText }}</span>
                 <div class="dots">
@@ -408,7 +420,37 @@ const isPageVisible = ref<boolean>(true)
 const isAtBottom = ref(true)
 const SCROLL_THRESHOLD = 50
 const thinkingText = ref<string>('')
-let thinkingTimeout: any = null
+let thinkingInterval: any = null
+let thinkingMsgIndex = 0
+const thinkingMessages = [
+  '思考中, 请稍候...',
+  '正在分析您的需求...',
+  '正在构思解决方案...',
+  '正在编写代码...',
+]
+
+// 统一停止思考动画的辅助函数
+const stopThinkingAnimation = () => {
+  if (thinkingInterval) {
+    clearInterval(thinkingInterval)
+    thinkingInterval = null
+  }
+  thinkingText.value = ''
+}
+
+// 流式输出间隔指示器：内容输出暂停时显示"持续处理中"
+const isProcessing = ref<boolean>(false)
+let idleTimeout: any = null
+const IDLE_THRESHOLD = 2500 // 2.5 秒无新内容判定为"处理中"
+
+// 停止"持续处理"指示器
+const stopProcessingIndicator = () => {
+  if (idleTimeout) {
+    clearTimeout(idleTimeout)
+    idleTimeout = null
+  }
+  isProcessing.value = false
+}
 
 const hasMoreHistory = ref(true)
 const isLoadingHistory = ref(false)
@@ -617,11 +659,13 @@ const sendPromptToAI = async (userMessage: string) => {
   isThinking.value = true
   userInput.value = ''
 
-  // 启动思考文字，1分钟后切换
-  thinkingText.value = '思考中, 请稍候...'
-  thinkingTimeout = setTimeout(() => {
-    thinkingText.value = '因网络原因可能会出现延迟...'
-  }, 60000)
+  // 启动思考文字轮播，每 4 秒切换，让用户在等待 AI 输出时明确感知"正在工作"
+  thinkingMsgIndex = 0
+  thinkingText.value = thinkingMessages[0]
+  thinkingInterval = setInterval(() => {
+    thinkingMsgIndex = (thinkingMsgIndex + 1) % thinkingMessages.length
+    thinkingText.value = thinkingMessages[thinkingMsgIndex]
+  }, 4000)
 
   await nextTick()
   scrollToBottom()
@@ -646,8 +690,15 @@ const sendPromptToAI = async (userMessage: string) => {
       if (aiMessage) {
         if (aiMessage.isThinking) {
           aiMessage.isThinking = false
+          // 收到首个 AI 输出，停止思考动画
+          stopThinkingAnimation()
         }
         aiMessage.content += text
+        // 重置空闲检测：正在输出，重新计时；超过阈值无新内容则显示"处理中"
+        stopProcessingIndicator()
+        idleTimeout = setTimeout(() => {
+          isProcessing.value = true
+        }, IDLE_THRESHOLD)
         await nextTick()
         scrollToBottom()
       }
@@ -675,6 +726,7 @@ const sendPromptToAI = async (userMessage: string) => {
   source.addEventListener('done', async (event: MessageEvent) => {
     isDone = true
     closeSource()
+    stopProcessingIndicator()
     if (event.data && event.data !== '[]') {
       try {
         const parsed = JSON.parse(event.data)
@@ -689,6 +741,8 @@ const sendPromptToAI = async (userMessage: string) => {
   source.addEventListener('business-error', async (event: MessageEvent) => {
     isDone = true
     closeSource()
+    stopThinkingAnimation()
+    stopProcessingIndicator()
 
     let errorMessage = '请求出错，请稍后重试。'
     try {
@@ -712,6 +766,10 @@ const sendPromptToAI = async (userMessage: string) => {
   source.onerror = () => {
     closeSource()
     if (!isDone) {
+      // 关键：必须设置 isDone，否则 waitForDone 会死循环，sendPromptToAI 永久挂起
+      isDone = true
+      stopThinkingAnimation()
+      stopProcessingIndicator()
       const thinkingMsg = messages.value.find(
         (msg) => msg.isThinking && msg.id === currentMarkdownId.value,
       )
@@ -754,12 +812,9 @@ const sendPromptToAI = async (userMessage: string) => {
         '\n\n代码已生成，现在为您显示预览页面。点击【部署】按钮可将应用部署到生产环境。'
     }
 
-    // 清除思考文字
-    if (thinkingTimeout) {
-      clearTimeout(thinkingTimeout)
-      thinkingTimeout = null
-    }
-    thinkingText.value = ''
+    // 清除思考动画
+    stopThinkingAnimation()
+    stopProcessingIndicator()
 
     currentMarkdownId.value = -1
   }
@@ -1111,6 +1166,20 @@ watch(previewVersion, () => {
   background: #bfdbfe;
 }
 
+/* 流式输出间隔的"持续处理"指示器 */
+.processing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  margin-top: 4px;
+}
+
+.processing-text {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
 .message.user {
   flex-direction: row-reverse;
 }
@@ -1124,6 +1193,9 @@ watch(previewVersion, () => {
   padding: 0;
   border-radius: 0;
   box-shadow: none;
+  /* 固定宽度而非 max-width，消除流式输出时气泡宽度左右跳变 */
+  width: 100%;
+  max-width: 100%;
 }
 
 .message-content :deep(pre),
