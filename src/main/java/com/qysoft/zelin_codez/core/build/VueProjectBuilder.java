@@ -81,7 +81,7 @@ public class VueProjectBuilder {
         log.info("开始下载项目依赖");
         //根据当前系统的环境
         String command = String.format("%s install", buildCommand("npm"));
-        final long TIME_OUT = 20L;
+        final long TIME_OUT = 60L;
         return executeCommand(workFile, command, TIME_OUT);
     }
 
@@ -94,7 +94,7 @@ public class VueProjectBuilder {
     public boolean executeBuild(File workFile) {
         log.info("开始构建项目");
         String command = String.format("%s run build", buildCommand("npm"));
-        final long TIME_OUT = 20L;
+        final long TIME_OUT = 60L;
         return executeCommand(workFile, command, TIME_OUT);
     }
 
