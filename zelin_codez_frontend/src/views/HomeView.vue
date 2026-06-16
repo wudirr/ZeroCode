@@ -85,31 +85,39 @@
               <FolderOpenIcon class="section-icon" />
               <h2>我的作品</h2>
             </div>
-            <a-row :gutter="[16, 20]" v-if="myApps.length > 0">
-              <a-col :span="6" v-for="app in myApps" :key="app.id">
-                <div class="app-item">
-                  <div class="app-card">
-                    <div class="app-cover">
-                      <img v-if="app.cover" :src="app.cover" :alt="app.appName" />
-                      <div v-else class="default-cover">
-                        <AppstoreIcon />
-                      </div>
-                      <div class="card-overlay">
-                        <a-button type="primary" @click.stop="goToChat(app.id as any)">
-                          <template #icon><MessageIcon /></template>
-                          查看对话
-                        </a-button>
-                      </div>
+            <div class="responsive-grid" v-if="myApps.length > 0">
+              <div v-for="app in myApps" :key="app.id" class="app-item">
+                <div class="app-card">
+                  <div class="app-cover">
+                    <img v-if="app.cover" :src="app.cover" :alt="app.appName" />
+                    <div v-else class="default-cover">
+                      <AppstoreIcon />
+                    </div>
+                    <div class="card-overlay">
+                      <a-button type="primary" @click.stop="goToChat(app.id as any)">
+                        <template #icon><MessageIcon /></template>
+                        查看对话
+                      </a-button>
                     </div>
                   </div>
-                  <div class="app-info">
-                    <h3>{{ app.appName }}</h3>
-                    <p>{{ formatTime(app.createTime) }}</p>
-                  </div>
                 </div>
-              </a-col>
-            </a-row>
+                <div class="app-info">
+                  <h3>{{ app.appName }}</h3>
+                  <p>{{ formatTime(app.createTime) }}</p>
+                </div>
+              </div>
+            </div>
             <a-empty v-else description="暂无作品" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+            <div v-if="myApps.length > 0 && myApps.length < myAppsTotal" class="load-more-wrapper">
+              <a-button
+                type="primary"
+                :loading="myAppsLoading"
+                @click="loadMoreMyApps"
+                class="load-more-btn"
+              >
+                加载更多
+              </a-button>
+            </div>
           </div>
 
           <!-- 精选案例 -->
@@ -118,39 +126,47 @@
               <StarIcon class="section-icon featured" />
               <h2>精选案例</h2>
             </div>
-            <a-row :gutter="[16, 20]" v-if="featuredApps.length > 0">
-              <a-col :span="6" v-for="app in featuredApps" :key="app.id">
-                <div class="app-item">
-                  <div class="app-card">
-                    <div class="app-cover">
-                      <img v-if="app.cover" :src="app.cover" :alt="app.appName" />
-                      <div v-else class="default-cover">
-                        <AppstoreIcon />
-                      </div>
-                      <div class="card-overlay">
-                        <a-button type="primary" @click="previewApp(app)">
-                          <template #icon><EyeIcon /></template>
-                          预览
-                        </a-button>
-                        <a-button v-if="app.deployKey" @click="viewDeployed(app)">
-                          <template #icon><ExportIcon /></template>
-                          查看部署
-                        </a-button>
-                      </div>
+            <div class="responsive-grid" v-if="featuredApps.length > 0">
+              <div v-for="app in featuredApps" :key="app.id" class="app-item">
+                <div class="app-card">
+                  <div class="app-cover">
+                    <img v-if="app.cover" :src="app.cover" :alt="app.appName" />
+                    <div v-else class="default-cover">
+                      <AppstoreIcon />
                     </div>
-                  </div>
-                  <div class="app-info">
-                    <div class="user-row">
-                      <a-avatar :src="app.userVO?.userAvatar" size="small" />
-                      <span>{{ app.userVO?.userName || '匿名用户' }}</span>
+                    <div class="card-overlay">
+                      <a-button type="primary" @click="previewApp(app)">
+                        <template #icon><EyeIcon /></template>
+                        预览
+                      </a-button>
+                      <a-button v-if="app.deployKey" @click="viewDeployed(app)">
+                        <template #icon><ExportIcon /></template>
+                        查看部署
+                      </a-button>
                     </div>
-                    <h3>{{ app.appName }}</h3>
-                    <p>{{ formatTime(app.createTime) }}</p>
                   </div>
                 </div>
-              </a-col>
-            </a-row>
+                <div class="app-info">
+                  <div class="user-row">
+                    <a-avatar :src="app.userVO?.userAvatar" size="small" />
+                    <span>{{ app.userVO?.userName || '匿名用户' }}</span>
+                  </div>
+                  <h3>{{ app.appName }}</h3>
+                  <p>{{ formatTime(app.createTime) }}</p>
+                </div>
+              </div>
+            </div>
             <a-empty v-else description="暂无精选案例" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+            <div v-if="featuredApps.length > 0 && featuredApps.length < featuredAppsTotal" class="load-more-wrapper">
+              <a-button
+                type="primary"
+                :loading="featuredAppsLoading"
+                @click="loadMoreFeaturedApps"
+                class="load-more-btn"
+              >
+                加载更多
+              </a-button>
+            </div>
           </div>
         </div>
       </section>
@@ -172,6 +188,14 @@ const prompt = ref('')
 const creating = ref(false)
 const myApps = ref<API.AppVO[]>([])
 const featuredApps = ref<API.AppVO[]>([])
+const myAppsTotal = ref(0)
+const featuredAppsTotal = ref(0)
+const MY_APPS_PAGE_SIZE = 12
+const FEATURED_APPS_PAGE_SIZE = 12
+const myAppsPageNum = ref(1)
+const featuredAppsPageNum = ref(1)
+const myAppsLoading = ref(false)
+const featuredAppsLoading = ref(false)
 
 const recommendTopics = [
   {
@@ -505,36 +529,64 @@ const formatTime = (time?: string) => {
   })
 }
 
-const loadMyApps = async () => {
+const loadMoreMyApps = () => {
+  const nextPage = myAppsPageNum.value + 1
+  myAppsPageNum.value = nextPage
+  loadMyApps(nextPage, true)
+}
+
+const loadMoreFeaturedApps = () => {
+  const nextPage = featuredAppsPageNum.value + 1
+  featuredAppsPageNum.value = nextPage
+  loadFeaturedApps(nextPage, true)
+}
+
+const loadMyApps = async (pageNum = 1, append = false) => {
   if (!userLoginStore.loginUser.id) return
+  if (append) myAppsLoading.value = true
   try {
     const res = await listMyApp({
       userId: userLoginStore.loginUser.id as any,
-      pageNum: 1,
-      pageSize: 100,
+      pageNum,
+      pageSize: MY_APPS_PAGE_SIZE,
       sortField: 'createTime',
       sortOrder: 'descend',
     })
     if (res.code === 200 && res.data?.records) {
-      myApps.value = res.data.records
+      if (append) {
+        myApps.value = [...myApps.value, ...res.data.records]
+      } else {
+        myApps.value = res.data.records
+      }
+      myAppsTotal.value = res.data.totalRow || res.data.total || 0
     }
   } catch (error) {
     console.error('加载我的作品失败', error)
+  } finally {
+    if (append) myAppsLoading.value = false
   }
 }
 
-const loadFeaturedApps = async () => {
+const loadFeaturedApps = async (pageNum = 1, append = false) => {
+  if (append) featuredAppsLoading.value = true
   try {
     const res = await listFeaturedApp({
       priority: 99,
-      pageNum: 1,
-      pageSize: 10,
+      pageNum,
+      pageSize: FEATURED_APPS_PAGE_SIZE,
     })
     if (res.code === 200 && res.data?.records) {
-      featuredApps.value = res.data.records
+      if (append) {
+        featuredApps.value = [...featuredApps.value, ...res.data.records]
+      } else {
+        featuredApps.value = res.data.records
+      }
+      featuredAppsTotal.value = res.data.totalRow || res.data.total || 0
     }
   } catch (error) {
     console.error('加载精选案例失败', error)
+  } finally {
+    if (append) featuredAppsLoading.value = false
   }
 }
 
@@ -821,9 +873,34 @@ onMounted(() => {
   padding: 24px;
   min-height: 400px;
   box-shadow: 0 4px 20px rgba(102, 204, 255, 0.1);
-  width: 60%;
+  width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
+}
+
+/* 响应式卡片网格 */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1400px) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1000px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .responsive-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
 }
 
 /* 统一卡片样式 */
@@ -1191,6 +1268,17 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* 加载更多按钮 */
+.load-more-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.load-more-btn {
+  min-width: 160px;
 }
 
 /* 响应式 */
