@@ -5,6 +5,7 @@ import com.qysoft.zelin_codez.ai.monitor.MonitorContext;
 import com.qysoft.zelin_codez.ai.monitor.MonitorContextHolder;
 import com.qysoft.zelin_codez.common.enums.RequestStatusEnum;
 import com.qysoft.zelin_codez.common.enums.TokenUsageTypeEnum;
+import com.qysoft.zelin_codez.common.utils.SpringContextUtil;
 import dev.langchain4j.model.chat.listener.ChatModelErrorContext;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.chat.listener.ChatModelRequestContext;
@@ -12,8 +13,6 @@ import dev.langchain4j.model.chat.listener.ChatModelResponseContext;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.request.ChatRequestParameters;
 import dev.langchain4j.model.output.TokenUsage;
-import jakarta.annotation.Resource;
-import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -23,24 +22,29 @@ import java.time.Instant;
  * @version 1.0
  * @since 1.0
  */
-@Component
 public class AiModelMonitorListener implements ChatModelListener {
-
-    @Resource
-    private AiModelMetricsCollector aiModelMetricsCollector;
 
     private static final String REQUEST_START_TIME_KEY = "requestStartTime";
 
     private static final String CONTEXT_KEY = "monitorContext";
+
+    private final AiModelMetricsCollector aiModelMetricsCollector = SpringContextUtil.getBean("aiModelMetricsCollector", AiModelMetricsCollector.class);
+
+    private MonitorContext TMP_CONTEXT;
+
+    private boolean CONTEXT_CACHED = false;
 
     @Override
     public void onRequest(ChatModelRequestContext requestContext) {
         //监听请求,获取数据
         requestContext.attributes().put(REQUEST_START_TIME_KEY, Instant.now());
         MonitorContext context = MonitorContextHolder.getContext();
-        if (context == null) {
+        if (context != null && !CONTEXT_CACHED) {
+            TMP_CONTEXT = context;
+            CONTEXT_CACHED = true;
+        } else {
             //兜底处理,如果在多轮对话中切换线程,也可以拿到上下文对象[使用没有切换线程之前的上下文对象]
-            context = (MonitorContext) requestContext.attributes().get(CONTEXT_KEY);
+            context = TMP_CONTEXT;
         }
         requestContext.attributes().putIfAbsent(CONTEXT_KEY, context);
         ChatRequest chatRequest = requestContext.chatRequest();
