@@ -6,6 +6,8 @@ import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.util.RandomUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.qysoft.zelin_codez.ai.monitor.MonitorContext;
+import com.qysoft.zelin_codez.ai.monitor.MonitorContextHolder;
 import com.qysoft.zelin_codez.common.constant.AppConstant;
 import com.qysoft.zelin_codez.common.enums.ChatHistoryMessageTypeEnum;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
@@ -150,7 +152,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             log.error("保存用户消息失败");
         }
         //调用AI服务生成代码
-        Flux<String> result = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, codeGenTypeEnum, app.getId());
+        MonitorContext monitorContext = new MonitorContext(loginUser.getId(), appId);
+        MonitorContextHolder.saveContext(monitorContext);
+        Flux<String> result = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, codeGenTypeEnum, app.getId()).doFinally(signalType -> {
+            //处理完流式响应之后清除上下文
+            MonitorContextHolder.removeContext();
+        });
         return streamMessageHandlerExecutor.messageHandler(appId, loginUser, result, chatHistoryService, codeGenTypeEnum);
     }
 

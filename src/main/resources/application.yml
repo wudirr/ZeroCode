@@ -3,18 +3,23 @@ spring:
     name: zelin_codez
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3308/zelin_codez?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+    url: jdbc:mysql://localhost:3306/zelin_codez?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
     # 数据库用户名
     username: root
     # 数据库密码
-    password: 111111
+    password: 14141212yangliU
   profiles:
     active: local
   session:
     store-type: redis
     # 30 天过期
     timeout: 2592000
-
+  data:
+    redis:
+      host: 192.168.93.132
+      port: 6379
+      password: ""
+      database: 0
 server:
   port: 8123
   servlet:
@@ -34,3 +39,13 @@ knife4j:
     language: zh_cn
 mybatis-flex:
   mapper-locations: classpath:/mapper/*.xml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+
