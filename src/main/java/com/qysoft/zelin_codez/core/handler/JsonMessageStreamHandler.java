@@ -89,6 +89,15 @@ public class JsonMessageStreamHandler {
         StreamMessageTypeEnum streamMessageTypeEnum = StreamMessageTypeEnum.getByValue(streamMessage.getType());
         ThrowUtils.throwIf(streamMessageTypeEnum == null, "不支持的消息类型");
         switch (streamMessageTypeEnum) {
+            case THINKING_CONTENT -> {
+                ThinkingMessage thinkingMessage = JSONUtil.toBean(flunk, ThinkingMessage.class);
+                String data = thinkingMessage.getData();
+                //返回JSON格式的数据,实时流式返回数据
+                return JSONUtil.createObj()
+                        .set("type", StreamMessageTypeEnum.THINKING_CONTENT.getValue())
+                        .set("data", data)
+                        .toString();
+            }
             case AI_RESPONSE -> {
                 AiResponseMessage aiResponseMessage = JSONUtil.toBean(flunk, AiResponseMessage.class);
                 String data = aiResponseMessage.getData();

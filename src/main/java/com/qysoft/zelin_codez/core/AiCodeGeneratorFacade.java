@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 import com.qysoft.zelin_codez.ai.AiCodeGeneratorService;
 import com.qysoft.zelin_codez.ai.AiCodeGeneratorServiceFactory;
 import com.qysoft.zelin_codez.ai.message.AiResponseMessage;
+import com.qysoft.zelin_codez.ai.message.ThinkingMessage;
 import com.qysoft.zelin_codez.ai.message.ToolExecutedRequestMessage;
 import com.qysoft.zelin_codez.ai.message.ToolExecutionRequestMessage;
 import com.qysoft.zelin_codez.ai.model.HtmlCodeResult;
@@ -23,6 +24,7 @@ import reactor.core.publisher.Flux;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @Description 零代码生成服务门面类
@@ -105,21 +107,41 @@ public class AiCodeGeneratorFacade {
 
     private Flux<String> processCodeStream(TokenStream tokenStream) {
         return Flux.create(sink -> {
-            tokenStream.onPartialResponse(response -> {
+            AtomicInteger emittedChunkCount = new AtomicInteger();
+            TokenStream configStream = tokenStream.onPartialResponse(response -> {
                 AiResponseMessage aiResponseMessage = new AiResponseMessage(response);
                 sink.next(JSONUtil.toJsonStr(aiResponseMessage));
+                emittedChunkCount.incrementAndGet();
             }).beforeToolExecution(beforeToolExecution -> {
                 ToolExecutionRequestMessage toolExecutionRequestMessage = new ToolExecutionRequestMessage(beforeToolExecution.request());
                 sink.next(JSONUtil.toJsonStr(toolExecutionRequestMessage));
+                emittedChunkCount.incrementAndGet();
             }).onToolExecuted(toolExecution -> {
                 ToolExecutedRequestMessage toolExecutedRequestMessage = new ToolExecutedRequestMessage(toolExecution);
                 sink.next(JSONUtil.toJsonStr(toolExecutedRequestMessage));
+                emittedChunkCount.incrementAndGet();
             }).onCompleteResponse(completeResponse -> {
+                if (emittedChunkCount.get() == 0
+                        && completeResponse != null
+                        && completeResponse.aiMessage() != null
+                        && StringUtils.isNotBlank(completeResponse.aiMessage().text())) {
+                    //有些模型不支持工具回调,有可能只会执行complete,这个是兜底处理
+                    sink.next(JSONUtil.toJsonStr(new AiResponseMessage(completeResponse.aiMessage().text())));
+                }
                 sink.complete();
             }).onError(e -> {
                 log.error("处理流式输出失败", e);
                 sink.error(e);
-            }).start();
+            });
+            try {
+                configStream.onPartialThinking(partialThinking -> {
+                    ThinkingMessage thinkingMessage = new ThinkingMessage(partialThinking);
+                    sink.next(JSONUtil.toJsonStr(thinkingMessage));
+                    emittedChunkCount.incrementAndGet();
+                });
+            } catch (Exception e) {
+                log.debug("模型不支持思考模式,已经降级为普通流式输出");
+            }
         });
     }
 }
