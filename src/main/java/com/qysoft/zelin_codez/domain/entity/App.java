@@ -4,16 +4,15 @@ import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.annotation.Table;
-import java.io.Serializable;
-import java.time.LocalDateTime;
-
-import java.io.Serial;
-
 import com.mybatisflex.core.keygen.KeyGenerators;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.io.Serial;
+import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
  * 应用 实体类。
@@ -33,7 +32,7 @@ public class App implements Serializable {
     /**
      * id
      */
-    @Id(keyType = KeyType.Generator,value = KeyGenerators.snowFlakeId)
+    @Id(keyType = KeyType.Generator, value = KeyGenerators.snowFlakeId)
     private Long id;
 
     /**
@@ -81,6 +80,12 @@ public class App implements Serializable {
      */
     @Column("userId")
     private Long userId;
+
+    /**
+     * 单轮对话id
+     */
+    @Column("turnId")
+    private Long turnId;
 
     /**
      * 编辑时间
