@@ -14,7 +14,7 @@ create table if not exists user
     isDelete     tinyint      default 0                 not null comment '是否删除',
     UNIQUE KEY uk_userAccount (userAccount),
     INDEX idx_userName (userName)
-    ) comment '用户' collate = utf8mb4_unicode_ci;
+) comment '用户' collate = utf8mb4_unicode_ci;
 
 ALTER TABLE user
     MODIFY userAvatar varchar(1024) NULL DEFAULT 'https://zeicil-1393261113.cos.ap-shanghai.myqcloud.com/public/user-2016506272590823424/2026-02-16_sy97ubu07oioxq67-thumbnil.jpeg' COMMENT '用户头像';
@@ -57,3 +57,37 @@ create table chat_history
     INDEX idx_appId_createTime (appId, createTime) -- 游标查询核心索引
 ) comment '对话历史' collate = utf8mb4_unicode_ci;
 
+-- 聊天事件日志表（用于可回放的结构化会话历史）
+-- 说明：chat_history 继续作为展示视图；chat_event_log 作为回放事实表
+create table if not exists chat_event_log
+(
+    id               bigint auto_increment comment 'id' primary key,
+    appId            bigint                             not null comment '应用 id',
+    memoryId         varchar(128)                       not null comment '会话内存 id（appId_codeGenType）',
+    turnId           varchar(64)                        not null comment '一轮对话标识',
+    seq              int                                not null comment '同一轮内事件顺序',
+    codeGenType      varchar(32)                        not null comment '代码生成类型（html/multi_file/vue_project）',
+    role             varchar(16)                        not null comment '消息角色（user/assistant/tool/system）',
+    eventType        varchar(32)                        not null comment '事件类型',
+    content          longtext                           null comment '消息文本内容',
+    reasoningContent longtext                           null comment '深度思考内容',
+    toolCallId       varchar(128)                       null comment '工具调用 id',
+    toolName         varchar(128)                       null comment '工具名称',
+    toolArguments    longtext                           null comment '工具参数（json）',
+    toolResult       longtext                           null comment '工具执行结果',
+    rawEventJson     longtext                           null comment '原始事件 json（审计/排障）',
+    userId           bigint                             not null comment '用户 id',
+    createTime       datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime       datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete         tinyint  default 0                 not null comment '是否删除',
+    index idx_memoryId_createTime (memoryId, createTime),
+    index idx_appId_codeGenType_createTime (appId, codeGenType, createTime),
+    index idx_turnId_seq (turnId, seq),
+    index idx_toolCallId (toolCallId)
+) comment '聊天事件日志' collate = utf8mb4_unicode_ci;
+
+-- 增加单轮对话id标识字段,并且添加对应的索引 --
+ALTER TABLE app
+    ADD COLUMN turnId varchar(16) null comment '单轮对话id标识' AFTER userId;
+
+CREATE INDEX idx_turnId ON app (turnId);
