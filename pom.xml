@@ -90,33 +90,29 @@
             <version>1.11.6</version>
         </dependency>
 
-        <!--Langchain4j-->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-community-redis-spring-boot-starter</artifactId>
+            <version>1.11.0-beta19</version>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-reactor</artifactId>
+            <version>1.11.0-beta19</version>
+        </dependency>
+
+
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
-            <version>1.3.0</version>
-        </dependency>
-
-        <!--redis-->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-community-redis</artifactId>
-            <version>1.3.0-beta9</version>
-            <scope>compile</scope>
+            <version>1.11.0</version>
         </dependency>
 
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai-spring-boot-starter</artifactId>
-            <version>1.3.0-beta9</version>
-        </dependency>
-
-        <!-- Source: https://mvnrepository.com/artifact/dev.langchain4j/langchain4j-reactor -->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-reactor</artifactId>
-            <version>1.3.0-beta9</version>
-            <scope>compile</scope>
+            <version>1.11.0-beta19</version>
         </dependency>
 
         <!--caffeine-->
