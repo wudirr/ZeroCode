@@ -3,16 +3,16 @@ package com.qysoft.zelin_codez.core.handler;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.qysoft.zelin_codez.ai.message.*;
+import com.qysoft.zelin_codez.ai.model.TurnAccumulator;
 import com.qysoft.zelin_codez.ai.tools.BaseTool;
 import com.qysoft.zelin_codez.ai.tools.ToolManager;
 import com.qysoft.zelin_codez.common.constant.AppConstant;
-import com.qysoft.zelin_codez.common.enums.ChatHistoryMessageTypeEnum;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.core.build.VueProjectBuilder;
-import com.qysoft.zelin_codez.domain.entity.User;
-import com.qysoft.zelin_codez.exception.BusinessException;
+import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
-import com.qysoft.zelin_codez.service.ChatHistoryService;
+import com.qysoft.zelin_codez.manager.TurnAccumulatorManager;
+import com.qysoft.zelin_codez.service.impl.TurnFlushService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -39,13 +39,33 @@ public class JsonMessageStreamHandler {
     @Resource
     private ToolManager toolManager;
 
-    public Flux<ServerSentEvent<String>> handler(Long appId, User loginUser, Flux<String> result, ChatHistoryService chatHistoryService) {
-        StringBuilder stringBuilder = new StringBuilder();
+    @Resource
+    private TurnFlushService turnFlushService;
+
+    /**
+     * 消息处理主方法
+     *
+     * @param appId  应用Id
+     * @param turnId 单轮对话聚合Id
+     * @param result 结果
+     * @return 处理后的流式输出
+     */
+    public Flux<ServerSentEvent<String>> handler(Long appId, String turnId, Flux<String> result) {
         Set<String> toolIds = new HashSet<>();
+        TurnAccumulator accumulator = TurnAccumulatorManager.getAccumulator(turnId);
+        ThrowUtils.throwIf(accumulator == null, ErrorCode.SYSTEM_ERROR);
         return result.map(flunk -> {
-            String message = jsonMessageHandler(flunk, stringBuilder, toolIds);
+            String message = jsonMessageHandler(flunk, toolIds, accumulator);
             if (message == null) {
-                throw new BusinessException("解析消息失败");
+                Map<String, String> flunkMap = Map.of(
+                        "d", "解析消息失败",
+                        "error", "true"
+                );
+                String flunkJson = JSONUtil.toJsonStr(flunkMap);
+                return ServerSentEvent.<String>builder()
+                        .event("error")
+                        .data(flunkJson)
+                        .build();
             }
             Map<String, String> flunkMap = Map.of("d", message);
             String flunkJson = JSONUtil.toJsonStr(flunkMap);
@@ -60,9 +80,7 @@ public class JsonMessageStreamHandler {
         )).doOnComplete(() -> {
             //异步保存聊天记录
             CompletableFuture.runAsync(() -> {
-                String message = stringBuilder.toString();
-                String messageType = ChatHistoryMessageTypeEnum.AI.getValue();
-                chatHistoryService.addChatMessage(appId, message, messageType, loginUser);
+                turnFlushService.flushSuccess(turnId);
             }).exceptionally(e -> {
                 log.error("保存历史聊天记录失败", e);
                 return null;
@@ -73,18 +91,25 @@ public class JsonMessageStreamHandler {
             File workFile = new File(workDir);
             VueProjectBuilder vueProjectBuilder = new VueProjectBuilder();
             vueProjectBuilder.installAndBuildVueProjectAsync(workFile);
+        }).doOnError(e -> {
+            //异步保存聊天记录
+            CompletableFuture.runAsync(() -> {
+                turnFlushService.flushError(turnId, e.getMessage());
+            }).exceptionally(errorMessage -> {
+                log.error("保存历史聊天记录失败", errorMessage);
+                return null;
+            });
         });
     }
 
     /**
      * JSON消息处理器
      *
-     * @param flunk         上游返回的StremMessage的JSON字符串
-     * @param stringBuilder 字符串拼接器
-     * @param toolIds       工具id集合
+     * @param flunk   上游返回的StremMessage的JSON字符串
+     * @param toolIds 工具id集合
      * @return 字符串
      */
-    private String jsonMessageHandler(String flunk, StringBuilder stringBuilder, Set<String> toolIds) {
+    private String jsonMessageHandler(String flunk, Set<String> toolIds, TurnAccumulator accumulator) {
         StreamMessage streamMessage = JSONUtil.toBean(flunk, StreamMessage.class);
         StreamMessageTypeEnum streamMessageTypeEnum = StreamMessageTypeEnum.getByValue(streamMessage.getType());
         ThrowUtils.throwIf(streamMessageTypeEnum == null, "不支持的消息类型");
@@ -92,6 +117,7 @@ public class JsonMessageStreamHandler {
             case THINKING_CONTENT -> {
                 ThinkingMessage thinkingMessage = JSONUtil.toBean(flunk, ThinkingMessage.class);
                 String data = thinkingMessage.getData();
+                accumulator.appendThinkingMessage(data);
                 //返回JSON格式的数据,实时流式返回数据
                 return JSONUtil.createObj()
                         .set("type", StreamMessageTypeEnum.THINKING_CONTENT.getValue())
@@ -101,7 +127,8 @@ public class JsonMessageStreamHandler {
             case AI_RESPONSE -> {
                 AiResponseMessage aiResponseMessage = JSONUtil.toBean(flunk, AiResponseMessage.class);
                 String data = aiResponseMessage.getData();
-                stringBuilder.append(data);
+                accumulator.appendAssistantMessage(data);
+//                stringBuilder.append(data);
                 return data;
             }
             case TOOL_REQUEST -> {
@@ -111,7 +138,10 @@ public class JsonMessageStreamHandler {
                     //这个时候将这个工具调用请求的id添加进来,说明是一次新的工具调用请求
                     toolIds.add(toolId);
                     String toolName = toolExecutionRequestMessage.getName();
-                    return toolManager.getTool(toolName).getToolRequestResult();
+                    String toolRequestResult = toolManager.getTool(toolName).getToolRequestResult();
+                    accumulator.addToolRequest(toolId, toolName, toolExecutionRequestMessage.getArguments(), toolRequestResult, flunk);
+                    accumulator.appendAssistantMessage(toolRequestResult);
+                    return toolRequestResult;
                 } else {
                     return "";
                 }
@@ -128,7 +158,9 @@ public class JsonMessageStreamHandler {
                     BaseTool tool = toolManager.getTool(toolName);
                     String result = tool.getToolRequestResponse(jsonObject);
                     String output = String.format("\n\n%s\n\n", result);
-                    stringBuilder.append(output);
+//                    stringBuilder.append(output);
+                    accumulator.addToolResult(toolExecutedRequestMessage.getId(), toolName, arguments, toolExecutedRequestMessage.getResult(), output, flunk);
+                    accumulator.appendAssistantMessage(output);
                     return output;
                 } catch (Exception e) {
                     log.error("解析工具调用结果失败", e);

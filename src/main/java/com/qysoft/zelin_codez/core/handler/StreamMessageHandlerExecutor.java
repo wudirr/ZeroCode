@@ -32,13 +32,13 @@ public class StreamMessageHandlerExecutor {
      * @param codeGenTypeEnum    代码类型
      * @return 封装后的流式结果
      */
-    public Flux<ServerSentEvent<String>> messageHandler(Long appId, User loginUser, Flux<String> result, ChatHistoryService chatHistoryService, CodeGenTypeEnum codeGenTypeEnum) {
+    public Flux<ServerSentEvent<String>> messageHandler(Long appId, String turnId, User loginUser, Flux<String> result, ChatHistoryService chatHistoryService, CodeGenTypeEnum codeGenTypeEnum) {
         switch (codeGenTypeEnum) {
             case HTML, MULTI_FILE -> {
                 return simpleTextStreamHandler.handler(appId, loginUser, result, chatHistoryService);
             }
             case VUE_PROJECT -> {
-                return jsonMessageStreamHandler.handler(appId, loginUser, result, chatHistoryService);
+                return jsonMessageStreamHandler.handler(appId, turnId, result);
             }
         }
         return null;

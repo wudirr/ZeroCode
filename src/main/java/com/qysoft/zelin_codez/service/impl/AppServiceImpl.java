@@ -3,13 +3,13 @@ package com.qysoft.zelin_codez.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.qysoft.zelin_codez.ai.monitor.MonitorContext;
 import com.qysoft.zelin_codez.ai.monitor.MonitorContextHolder;
 import com.qysoft.zelin_codez.common.constant.AppConstant;
-import com.qysoft.zelin_codez.common.enums.ChatHistoryMessageTypeEnum;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.core.AiCodeGeneratorFacade;
 import com.qysoft.zelin_codez.core.build.VueProjectBuilder;
@@ -24,6 +24,7 @@ import com.qysoft.zelin_codez.domain.vo.user.UserVO;
 import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
+import com.qysoft.zelin_codez.manager.TurnAccumulatorManager;
 import com.qysoft.zelin_codez.mapper.AppMapper;
 import com.qysoft.zelin_codez.service.AppService;
 import com.qysoft.zelin_codez.service.ChatHistoryService;
@@ -147,18 +148,19 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         //保存用户消息
-        Boolean flag = chatHistoryService.addChatMessage(appId, userMessage, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser);
-        if (!flag) {
-            log.error("保存用户消息失败");
-        }
+//        Boolean flag = chatHistoryService.addChatMessage(appId, userMessage, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser);
         //调用AI服务生成代码
+        String memoryId = String.format("%s_%s", appId, codeGenType);
+        String turnId = IdUtil.fastSimpleUUID();
+        //开始聚合单轮对话上下文
+        TurnAccumulatorManager.startTurn(loginUser.getId(), appId, memoryId, turnId, userMessage, codeGenType);
         MonitorContext monitorContext = new MonitorContext(loginUser.getId(), appId);
         MonitorContextHolder.saveContext(monitorContext);
         Flux<String> result = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, codeGenTypeEnum, app.getId()).doFinally(signalType -> {
             //处理完流式响应之后清除上下文
             MonitorContextHolder.removeContext();
         });
-        return streamMessageHandlerExecutor.messageHandler(appId, loginUser, result, chatHistoryService, codeGenTypeEnum);
+        return streamMessageHandlerExecutor.messageHandler(appId, turnId, loginUser, result, chatHistoryService, codeGenTypeEnum);
     }
 
     @Override

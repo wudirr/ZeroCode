@@ -9,7 +9,7 @@ import org.apache.commons.lang3.StringUtils;
  */
 @Getter
 @RequiredArgsConstructor
-public enum EventTypeEnum {
+public enum ChatEventTypeEnum {
 
     USER_MESSAGE("USER_MESSAGE", "用户消息"),
 
@@ -27,12 +27,13 @@ public enum EventTypeEnum {
 
     private final String desc;
 
-    public static EventTypeEnum getByValue(String value) {
+    public static ChatEventTypeEnum getByValue(String value) {
         if (StringUtils.isBlank(value)) return null;
-        for (EventTypeEnum eventTypeEnum : EventTypeEnum.values()) {
+        for (ChatEventTypeEnum eventTypeEnum : ChatEventTypeEnum.values()) {
             if (eventTypeEnum.getValue().equals(value)) {
                 return eventTypeEnum;
             }
         }
+        return null;
     }
 }
