@@ -6,7 +6,9 @@ import com.qysoft.zelin_codez.common.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolMemoryId;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
@@ -22,6 +24,9 @@ import java.nio.file.StandardOpenOption;
 @Slf4j
 @Component
 public class FileEditTool extends BaseTool {
+
+    @Resource
+    private PlanTracker planTracker;
 
     /**
      * 修改文件工具
@@ -61,7 +66,8 @@ public class FileEditTool extends BaseTool {
             }
             Files.writeString(path, replaceContent, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             log.info("文件修改成功,相对路径: {}", relativeFilePath);
-            return String.format("文件修改成功,相对路径: %s,修改后的内容: %s", relativeFilePath, replaceContent);
+            String message = planTracker.onPlanExecuted(appId);
+            return String.format("文件修改成功,相对路径: %s,修改后的内容: %s" + (StringUtils.isNotBlank(message) ? message : ""), relativeFilePath, replaceContent);
         } catch (Exception e) {
             String errorMessage = String.format("修改文件失败,相对路径:%s,失败原因:%s", relativeFilePath, e.getMessage());
             log.error(errorMessage);

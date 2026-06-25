@@ -5,6 +5,8 @@ import com.qysoft.zelin_codez.common.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolMemoryId;
+import io.micrometer.common.util.StringUtils;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +22,9 @@ import java.nio.file.Paths;
 @Slf4j
 @Component
 public class FileReadTool extends BaseTool {
+
+    @Resource
+    private PlanTracker planTracker;
 
     /**
      * 文件阅读工具
@@ -43,7 +48,8 @@ public class FileReadTool extends BaseTool {
             if (!Files.isRegularFile(path)) {
                 return "警告-读取的文件不是一个普通的文件,读取文件失败,相对路径: " + relativeFilePath;
             }
-            String message = String.format("读取文件内容成功,相对路径:%s,内容:%s", relativeFilePath, Files.readString(path));
+            String s = planTracker.onPlanExecuted(appId);
+            String message = String.format("读取文件内容成功,相对路径:%s,内容:%s" + (StringUtils.isNotBlank(s) ? s : ""), relativeFilePath, Files.readString(path));
             log.info("读取文件成功,相对路径: {}", relativeFilePath);
             return message;
         } catch (Exception e) {

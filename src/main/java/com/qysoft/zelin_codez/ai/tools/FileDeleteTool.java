@@ -5,7 +5,9 @@ import com.qysoft.zelin_codez.common.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolMemoryId;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -21,6 +23,9 @@ import java.nio.file.Paths;
 @Slf4j
 @Component
 public class FileDeleteTool extends BaseTool {
+
+    @Resource
+    private PlanTracker planTracker;
 
     /**
      * 重要的文件列表
@@ -61,7 +66,8 @@ public class FileDeleteTool extends BaseTool {
             }
             Files.delete(path);
             log.info("删除文件:{}成功", relativeFilePath);
-            return "删除文件成功,相对路径: " + relativeFilePath;
+            String message = planTracker.onPlanExecuted(appId);
+            return "删除文件成功,相对路径: " + relativeFilePath + (StringUtils.isNotBlank(message) ? message : "");
         } catch (Exception e) {
             String errorMessage = String.format("删除文件失败,相对路径:%s,失败原因:%s", relativeFilePath, e.getMessage());
             log.error(errorMessage);

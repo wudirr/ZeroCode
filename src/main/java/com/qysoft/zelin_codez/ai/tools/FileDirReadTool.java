@@ -7,6 +7,7 @@ import com.qysoft.zelin_codez.common.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolMemoryId;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,9 @@ import java.util.Set;
 @Slf4j
 @Component
 public class FileDirReadTool extends BaseTool {
+
+    @Resource
+    private PlanTracker planTracker;
 
     /**
      * 需要忽略的文件目录和文件名
@@ -82,7 +86,9 @@ public class FileDirReadTool extends BaseTool {
                 contentBuilder.append(" ".repeat(depth)).append(file.getName());
             });
             log.info("文件目录读取成功,相对路径:{}", relativeDirPath);
-            return String.format("文件目录读取成功,相对路径:%s,读取内容:%s", relativeDirPath, contentBuilder);
+            String message = planTracker.onPlanExecuted(appId);
+            return String.format("文件目录读取成功,相对路径:%s,读取内容:%s" + (StringUtils.isNotBlank(message) ? message : ""),
+                    relativeDirPath, contentBuilder);
         } catch (Exception e) {
             String errorMessage = String.format("读取目录失败,相对路径:%s,失败原因:%s", relativeDirPath, e.getMessage());
             log.error(errorMessage);
