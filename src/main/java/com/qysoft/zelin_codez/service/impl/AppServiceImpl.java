@@ -26,10 +26,7 @@ import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.manager.TurnAccumulatorManager;
 import com.qysoft.zelin_codez.mapper.AppMapper;
-import com.qysoft.zelin_codez.service.AppService;
-import com.qysoft.zelin_codez.service.ChatHistoryService;
-import com.qysoft.zelin_codez.service.ScreenShotService;
-import com.qysoft.zelin_codez.service.UserService;
+import com.qysoft.zelin_codez.service.*;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -73,6 +70,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private StreamMessageHandlerExecutor streamMessageHandlerExecutor;
+
+    @Resource
+    private ChatEventLogService chatEventLogService;
 
     @Override
     public AppVO getAppVO(App app) {
@@ -215,6 +215,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (!flag) {
             log.error("删除历史聊天记录失败");
         }
+        //删除关联的聊天事件日志
+        chatEventLogService.deleteByAppId(appId);
         return super.removeById(appId);
     }
 

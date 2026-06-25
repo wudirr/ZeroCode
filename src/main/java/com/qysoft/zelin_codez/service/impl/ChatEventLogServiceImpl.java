@@ -2,12 +2,16 @@ package com.qysoft.zelin_codez.service.impl;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.qysoft.zelin_codez.domain.entity.App;
 import com.qysoft.zelin_codez.domain.entity.ChatEventLog;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.mapper.ChatEventLogMapper;
+import com.qysoft.zelin_codez.service.AppService;
 import com.qysoft.zelin_codez.service.ChatEventLogService;
+import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,6 +23,10 @@ import java.util.List;
  */
 @Service
 public class ChatEventLogServiceImpl extends ServiceImpl<ChatEventLogMapper, ChatEventLog> implements ChatEventLogService {
+
+    @Resource
+    @Lazy
+    private AppService appService;
 
     @Override
     public List<ChatEventLog> listEventByMemoryId(String memoryId, int limit) {
@@ -38,5 +46,15 @@ public class ChatEventLogServiceImpl extends ServiceImpl<ChatEventLogMapper, Cha
         QueryWrapper queryWrapper = new QueryWrapper();
         queryWrapper.eq("turnId", turnId);
         return this.list(queryWrapper);
+    }
+
+    @Override
+    public void deleteByAppId(Long appId) {
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR);
+        App app = appService.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        QueryWrapper queryWrapper = QueryWrapper.create().eq("appId", appId);
+        boolean flag = this.remove(queryWrapper);
+        ThrowUtils.throwIf(!flag, "删除事件日志失败");
     }
 }

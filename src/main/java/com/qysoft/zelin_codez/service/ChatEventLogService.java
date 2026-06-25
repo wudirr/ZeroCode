@@ -28,4 +28,12 @@ public interface ChatEventLogService extends IService<ChatEventLog> {
      * @return 聊天事件日志集合
      */
     List<ChatEventLog> listEventByTurnId(Long turnId);
+
+    /**
+     * 根据appId删除所有的事件日志
+     *
+     * @param appId 应用id
+     * @return 删除结果
+     */
+    void deleteByAppId(Long appId);
 }
