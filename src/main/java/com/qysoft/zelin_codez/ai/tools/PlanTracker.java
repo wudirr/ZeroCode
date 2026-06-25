@@ -34,7 +34,7 @@ public class PlanTracker {
 
     static final int MAX_TOOL_EXECUTED_COUNT = 3;
 
-    private Map<String, String> renderMap = new HashMap<>();
+    final Map<String, String> renderMap = new HashMap<>();
 
     @PostConstruct
     void init() {
