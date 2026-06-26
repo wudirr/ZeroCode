@@ -155,6 +155,16 @@ public class JsonMessageStreamHandler {
                     JSONObject jsonObject = JSONUtil.parseObj(arguments);
                     //构建返回结果
                     String toolName = toolExecutedRequestMessage.getName();
+                    if ("updatePlan".equals(toolName)) {
+                        //手动构建Json数据返回给前端,用户数据渲染
+                        accumulator.addToolResult(toolExecutedRequestMessage.getId(), toolName, arguments, toolExecutedRequestMessage.getResult(), "", flunk);
+                        return JSONUtil.createObj()
+                                .set("type", "tool_request")
+                                .set("name", "updatePlan")
+                                .set("result", toolExecutedRequestMessage.getResult())
+                                .set("arguments", arguments)
+                                .toString();
+                    }
                     BaseTool tool = toolManager.getTool(toolName);
                     String result = tool.getToolRequestResponse(jsonObject);
                     String output = String.format("\n\n%s\n\n", result);
