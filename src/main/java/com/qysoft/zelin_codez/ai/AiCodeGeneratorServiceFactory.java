@@ -9,13 +9,14 @@ import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.common.utils.SpringContextUtil;
 import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.service.ChatMemoryReplayService;
-import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
+import com.qysoft.zelin_codez.stores.CompactingChatMemoryStore;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import dev.langchain4j.service.AiServices;
+import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
@@ -40,7 +41,7 @@ public class AiCodeGeneratorServiceFactory {
     private ChatModel chatModel;
 
     @Resource
-    private RedisChatMemoryStore redisChatMemoryStore;
+    private ChatMemoryStore redisChatMemoryStore;
 
     @Resource
     private ToolManager toolManager;
@@ -106,7 +107,8 @@ public class AiCodeGeneratorServiceFactory {
                     int replayCount = chatMemoryReplayService.rebuildFromEvent(memoryId, chatMemory, VUE_MAX_EVENTS);
                     log.info("VUE_PROJECT事件回放完毕,memoryId = {},replayCount = {}", memoryId, replayCount);
                 }
-                //TODO 实现第一层上下文压缩,使用占位符替换工具执行结果
+                //Layer1 第一层上下文压缩,使用占位符替换工具执行结果
+                microCompactWindowContext(memoryId);
                 //TODO 实现第二层上下文压缩,窗口上下文超过阈值启用LLM进行上下文摘要
                 OpenAiStreamingChatModel reasoningStreamingChatModel = SpringContextUtil.getBean("reasoningStreamingChatModelPrototype", OpenAiStreamingChatModel.class);
                 yield AiServices.builder(AiCodeGeneratorService.class)
@@ -143,5 +145,17 @@ public class AiCodeGeneratorServiceFactory {
                 .chatModel(chatModel)
                 .streamingChatModel(openAiStreamingChatModel)
                 .build();
+    }
+
+    /**
+     * 微压缩窗口上下文
+     *
+     * @param memoryId 记忆id
+     * @return 压缩结果
+     */
+    private void microCompactWindowContext(String memoryId) {
+        if (redisChatMemoryStore != null && redisChatMemoryStore instanceof CompactingChatMemoryStore compactingChatMemoryStore) {
+            compactingChatMemoryStore.compactAndPersist(memoryId);
+        }
     }
 }
