@@ -21,6 +21,7 @@ import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.service.AppService;
+import com.qysoft.zelin_codez.service.ContextCompactionService;
 import com.qysoft.zelin_codez.service.ProjectDownLoadService;
 import com.qysoft.zelin_codez.service.UserService;
 import jakarta.annotation.Resource;
@@ -60,6 +61,9 @@ public class AppController {
 
     @Resource
     private AiCodeTypeRoutingGeneratorServiceFactory aiCodeTypeRoutingGeneratorServiceFactory;
+
+    @Resource
+    private ContextCompactionService contextCompactionService;
 
     /**
      * 用户创建应用
@@ -341,6 +345,29 @@ public class AppController {
         }
         String downloadFileName = appId.toString();
         projectDownLoadService.downloadProjectAsZip(projectPath, downloadFileName, httpServletResponse);
+    }
+
+    /**
+     * 上下文压缩接口
+     *
+     * @param appId              应用id
+     * @param httpServletRequest http请求对象
+     * @return 执行结果
+     */
+    @GetMapping("/context/compact")
+    public Result<?> contextCompacted(@RequestParam Long appId, HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "id不合法");
+        App app = appService.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        ThrowUtils.throwIf(loginUser == null || loginUser.getId() <= 0, ErrorCode.NOT_LOGIN_ERROR);
+        if (!loginUser.getId().equals(app.getUserId()) && !loginUser.getUserRole().equals(UserRoleEnum.ADMIN.getRole())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "没有权限");
+        }
+        String memoryId = appId + "_" + app.getCodeGenType();
+        boolean flag = contextCompactionService.forceCompacted(memoryId);
+        ThrowUtils.throwIf(!flag, ErrorCode.SYSTEM_ERROR, "压缩失败");
+        return Result.success();
     }
 
     /**
