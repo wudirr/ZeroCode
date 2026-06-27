@@ -9,6 +9,7 @@ import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.common.utils.SpringContextUtil;
 import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.service.ChatMemoryReplayService;
+import com.qysoft.zelin_codez.service.ContextCompactionService;
 import com.qysoft.zelin_codez.stores.CompactingChatMemoryStore;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
@@ -48,6 +49,9 @@ public class AiCodeGeneratorServiceFactory {
 
     @Resource
     private ChatMemoryReplayService chatMemoryReplayService;
+
+    @Resource
+    private ContextCompactionService contextCompactionService;
 
     /**
      * caffeine缓存对象
@@ -109,7 +113,8 @@ public class AiCodeGeneratorServiceFactory {
                 }
                 //Layer1 第一层上下文压缩,使用占位符替换工具执行结果
                 microCompactWindowContext(memoryId);
-                //TODO 实现第二层上下文压缩,窗口上下文超过阈值启用LLM进行上下文摘要
+                //Layer2 第二层上下文压缩,窗口上下文超过阈值启用LLM进行上下文摘要
+                contextCompactionService.autoCompactedIfNeeded(chatMemory, memoryId);
                 OpenAiStreamingChatModel reasoningStreamingChatModel = SpringContextUtil.getBean("reasoningStreamingChatModelPrototype", OpenAiStreamingChatModel.class);
                 yield AiServices.builder(AiCodeGeneratorService.class)
                         .chatModel(chatModel)
