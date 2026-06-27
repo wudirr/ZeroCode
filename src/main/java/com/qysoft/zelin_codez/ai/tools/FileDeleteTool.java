@@ -67,9 +67,9 @@ public class FileDeleteTool extends BaseTool {
             Files.delete(path);
             log.info("删除文件:{}成功", relativeFilePath);
             String message = planTracker.onPlanExecuted(appId);
-            return "删除文件成功,相对路径: " + relativeFilePath + (StringUtils.isNotBlank(message) ? message : "");
+            return "删除文件成功,relativeFilePath: " + relativeFilePath + (StringUtils.isNotBlank(message) ? message : "");
         } catch (Exception e) {
-            String errorMessage = String.format("删除文件失败,相对路径:%s,失败原因:%s", relativeFilePath, e.getMessage());
+            String errorMessage = String.format("删除文件失败,relativeFilePath :%s,失败原因:%s", relativeFilePath, e.getMessage());
             log.error(errorMessage);
             return errorMessage;
         }

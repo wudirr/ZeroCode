@@ -67,9 +67,9 @@ public class FileEditTool extends BaseTool {
             Files.writeString(path, replaceContent, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             log.info("文件修改成功,相对路径: {}", relativeFilePath);
             String message = planTracker.onPlanExecuted(appId);
-            return String.format("文件修改成功,相对路径: %s,修改后的内容: %s" + (StringUtils.isNotBlank(message) ? message : ""), relativeFilePath, replaceContent);
+            return String.format("文件修改成功,relativeFilePath: %s,oldContent: %s,newContent: %s" + (StringUtils.isNotBlank(message) ? message : ""), relativeFilePath, oldContent, replaceContent);
         } catch (Exception e) {
-            String errorMessage = String.format("修改文件失败,相对路径:%s,失败原因:%s", relativeFilePath, e.getMessage());
+            String errorMessage = String.format("修改文件失败,relativeFilePath:%s,失败原因:%s", relativeFilePath, e.getMessage());
             log.error(errorMessage);
             return errorMessage;
         }

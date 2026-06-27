@@ -47,9 +47,9 @@ public class FileWriteTool extends BaseTool {
             Files.write(path, content.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             log.info("文件写入成功,路径为: {}", relativeFilePath);
             String message = planTracker.onPlanExecuted(memoryId);
-            return "文件写入成功,路径为: " + relativeFilePath + (StringUtils.isNotBlank(message) ? message : "");
+            return "文件写入成功,relativeFilePath: " + relativeFilePath + (StringUtils.isNotBlank(message) ? message : "");
         } catch (Exception e) {
-            String errorMessage = "文件写入失败,相对路径:" + relativeFilePath + ",失败原因:" + e.getMessage();
+            String errorMessage = "文件写入失败,relativeFilePath:" + relativeFilePath + ",失败原因:" + e.getMessage();
             log.error(errorMessage, e);
             return errorMessage;
         }
