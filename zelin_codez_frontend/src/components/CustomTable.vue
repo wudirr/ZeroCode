@@ -25,8 +25,8 @@
             :class="{ 'row-odd': index % 2 === 1 }"
           >
             <td v-for="col in columns" :key="col.key" class="data-cell">
-              <slot :name="col.key" :row="row" :value="row[col.dataIndex]">
-                {{ row[col.dataIndex] }}
+              <slot :name="col.key" :row="row" :value="col.dataIndex ? row[col.dataIndex] : undefined">
+                {{ col.dataIndex ? row[col.dataIndex] : '' }}
               </slot>
             </td>
           </tr>

@@ -48,11 +48,6 @@ export const routes = [
     component: AppEdit,
   },
   {
-    path: '/about',
-    name: 'about',
-    component: () => import('../views/AboutView.vue'),
-  },
-  {
     path: '/chat/:appId',
     name: 'chat',
     component: ChatView,

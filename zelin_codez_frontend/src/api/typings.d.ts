@@ -12,7 +12,6 @@ declare namespace API {
   type AppEditRequest = {
     id: number
     appName?: string
-    cover?: string
   }
 
   type AppQueryRequest = {
@@ -52,6 +51,17 @@ declare namespace API {
     updateTime?: string
   }
 
+  type ChatHistory = {
+    id?: number
+    message?: string
+    messageType?: string
+    appId?: number
+    userId?: number
+    createTime?: string
+    updateTime?: string
+    isDelete?: number
+  }
+
   type chatToGenCodeParams = {
     appId: number
     userMessage: string
@@ -59,6 +69,10 @@ declare namespace API {
 
   type DeleteRequest = {
     id?: number
+  }
+
+  type downloadAppParams = {
+    appId: number
   }
 
   type getAppInfoParams = {
@@ -69,12 +83,36 @@ declare namespace API {
     id: number
   }
 
+  type getInfo1Params = {
+    id: number
+  }
+
   type getInfoParams = {
     id: number
   }
 
+  type listAppChatHistoryParams = {
+    appId: number
+    pageSize?: number
+    lastCreateTime?: string
+  }
+
+  type page1Params = {
+    page: PageChatHistory
+  }
+
   type PageAppVO = {
     records?: AppVO[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    total?: number
+    optimizeCountQuery?: boolean
+  }
+
+  type PageChatHistory = {
+    records?: ChatHistory[]
     pageNumber?: number
     pageSize?: number
     totalPage?: number
@@ -93,6 +131,10 @@ declare namespace API {
     totalPage?: number
     totalRow?: number
     optimizeCountQuery?: boolean
+  }
+
+  type remove1Params = {
+    id: number
   }
 
   type ResultAppVO = {
@@ -122,6 +164,12 @@ declare namespace API {
   type ResultPageAppVO = {
     code?: number
     data?: PageAppVO
+    message?: string
+  }
+
+  type ResultPageChatHistory = {
+    code?: number
+    data?: PageChatHistory
     message?: string
   }
 
@@ -161,6 +209,10 @@ declare namespace API {
     deployKey: string
   }
 
+  type setAppToFeaturedParams = {
+    id: number
+  }
+
   type UserEditRequest = {
     id?: number
     userPassword?: string
@@ -179,6 +231,7 @@ declare namespace API {
     id?: number
     userAccount?: string
     userName?: string
+    userRole?: string
   }
 
   type UserQueryRequest = {
