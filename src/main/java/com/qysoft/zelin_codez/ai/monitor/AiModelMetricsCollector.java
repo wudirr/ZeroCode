@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -68,7 +69,7 @@ public class AiModelMetricsCollector {
                         .tag("user_id", userId.toString())
                         .tag("app_id", appId.toString())
                         .tag("model_name", modelName)
-                        .tag("error_message", errorMessage)
+                        .tag("error_message", StringUtils.isBlank(errorMessage) ? "unknown error" : errorMessage)
                         .register(meterRegistry));
         counter.increment();
     }

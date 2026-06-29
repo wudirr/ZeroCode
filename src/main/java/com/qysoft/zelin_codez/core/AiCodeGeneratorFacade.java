@@ -142,6 +142,7 @@ public class AiCodeGeneratorFacade {
             } catch (Exception e) {
                 log.debug("模型不支持思考模式,已经降级为普通流式输出");
             }
+            configStream.start();
         });
     }
 }

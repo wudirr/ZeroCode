@@ -27,7 +27,7 @@ public class TurnAccumulatorManager {
      * @param codeGenType 代码生成类型
      */
     public static void startTurn(Long userId, Long appId, String memoryId, String turnId, String userMessage, String codeGenType) {
-        TurnAccumulator turnAccumulator = new TurnAccumulator(userId, appId, memoryId, turnId, userMessage, codeGenType);
+        TurnAccumulator turnAccumulator = new TurnAccumulator(userId, appId, memoryId, turnId, codeGenType, userMessage);
         turnAccumulatorMap.put(turnId, turnAccumulator);
     }
 

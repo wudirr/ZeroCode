@@ -1,5 +1,6 @@
 package com.qysoft.zelin_codez.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.qysoft.zelin_codez.domain.entity.App;
@@ -54,6 +55,11 @@ public class ChatEventLogServiceImpl extends ServiceImpl<ChatEventLogMapper, Cha
         App app = appService.getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
         QueryWrapper queryWrapper = QueryWrapper.create().eq("appId", appId);
+        //查询事件日志
+        List<ChatEventLog> list = this.list(queryWrapper);
+        if (CollectionUtil.isEmpty(list)) {
+            return;
+        }
         boolean flag = this.remove(queryWrapper);
         ThrowUtils.throwIf(!flag, "删除事件日志失败");
     }

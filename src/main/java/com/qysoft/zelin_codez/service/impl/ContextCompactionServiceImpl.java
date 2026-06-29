@@ -199,7 +199,7 @@ public class ContextCompactionServiceImpl implements ContextCompactionService {
     }
 
     /**
-     * 计算上下午消息中占用的token
+     * 计算上下午消息中占用的token[模糊计算大概是 字符数 / 3]
      *
      * @param messages 消息列表
      * @return 占用token数
@@ -209,6 +209,6 @@ public class ContextCompactionServiceImpl implements ContextCompactionService {
         for (ChatMessage message : messages) {
             estimatedTokens += message.toString().length();
         }
-        return estimatedTokens;
+        return estimatedTokens / 3;
     }
 }

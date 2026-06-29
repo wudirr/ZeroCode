@@ -203,7 +203,7 @@ public class PlanTracker {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    private static class PlanState {
+    public static class PlanState {
 
         private List<PlanItem> items;
 

@@ -3,6 +3,7 @@ package com.qysoft.zelin_codez.ai.tools;
 import cn.hutool.json.JSONObject;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * @author qysoft
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0
  */
 @Slf4j
+@Component
 public class ExitTool extends BaseTool {
 
     /**
@@ -25,7 +27,7 @@ public class ExitTool extends BaseTool {
 
     @Override
     public String getToolName() {
-        return "exitTool";
+        return "exit";
     }
 
     @Override

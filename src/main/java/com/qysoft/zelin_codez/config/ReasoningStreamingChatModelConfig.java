@@ -81,6 +81,7 @@ public class ReasoningStreamingChatModelConfig {
         if (StringUtils.isNotBlank(reasoningThinkingType) && reasoningThinkingType.equals("enabled")) {
             Map<String, Object> customParameters = new HashMap<>();
             customParameters.put("thinking", Map.of("type", reasoningThinkingType));
+//            customParameters.put("enable_thinking", true);
             builder.customParameters(customParameters);
         }
         return builder.build();

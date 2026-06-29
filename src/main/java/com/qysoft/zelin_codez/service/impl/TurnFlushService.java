@@ -15,6 +15,7 @@ import com.qysoft.zelin_codez.service.ChatHistoryService;
 import com.qysoft.zelin_codez.service.UserService;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TurnFlushService {
 
     @Resource
+    @Lazy
     private ChatHistoryService chatHistoryService;
 
     @Resource
@@ -139,6 +141,7 @@ public class TurnFlushService {
                 .role(SystemRoleEnum.USER.getValue())
                 .eventType(ChatEventTypeEnum.USER_MESSAGE.getValue())
                 .content(userMessage)
+                .userId(userId)
                 .build());
 
         //添加AI思考信息日志

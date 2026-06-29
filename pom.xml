@@ -177,6 +177,12 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
+        <!-- Override Spring Boot BOM managed jedis(6.0.0) to match langchain4j-community-redis binary API -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>7.2.1</version>
+        </dependency>
 
     </dependencies>
 
