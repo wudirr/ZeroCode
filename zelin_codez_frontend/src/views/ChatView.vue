@@ -100,6 +100,29 @@
             />
             <img v-else src="@/favicon.ico" class="avatar" />
             <div class="message-content">
+              <!-- 思考内容面板 -->
+              <div v-if="message.thinkingContent" class="thinking-panel" :class="{ expanded: message.thinkingExpanded }">
+                <div class="thinking-panel-header" @click="message.thinkingExpanded = !message.thinkingExpanded">
+                  <div class="thinking-panel-title">
+                    <svg class="brain-icon" viewBox="0 0 24 24" fill="none" stroke="#66ccff" stroke-width="2">
+                      <path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6.1L12 22l-3.7-6.9C6.3 13.7 5 11.5 5 9a7 7 0 0 1 7-7z"/>
+                      <path d="M9 9h0M15 9h0M9 13h0M15 13h0"/>
+                    </svg>
+                    <span>AI 思考过程</span>
+                  </div>
+                  <div class="thinking-panel-status">
+                    <span class="status-dot done"></span>
+                    <span class="status-text">已思考</span>
+                  </div>
+                  <svg class="thinking-chevron" :class="{ rotated: message.thinkingExpanded }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </div>
+                <div class="thinking-panel-body">
+                  <div class="thinking-text">{{ message.thinkingContent }}</div>
+                </div>
+              </div>
+
               <p v-if="!message.isMarkdown">{{ message.content }}</p>
               <MarkdownRenderer v-if="message.isMarkdown" :content="message.content" />
               <!-- 流式输出间隔时的"持续处理"指示器 -->
@@ -131,6 +154,29 @@
           @remove="visualEditor.removeElement"
           @clear="visualEditor.clearSelection"
         />
+        <!-- 任务计划面板：固定在聊天区底部，极简风格 -->
+        <div v-if="currentPlanSteps.length > 0" class="plan-panel-wrapper">
+          <div class="plan-panel-header">
+            <svg class="plan-icon" viewBox="0 0 24 24" fill="none" stroke="#66ccff" stroke-width="2">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            <span class="plan-panel-title">任务计划</span>
+            <span class="plan-panel-summary">{{ currentPlanSummary }}</span>
+          </div>
+          <div class="plan-panel-body">
+            <div v-for="(step, idx) in currentPlanSteps" :key="idx" class="plan-step" :class="'step-status-' + step.status">
+              <span class="step-marker">
+                <svg v-if="step.status === 'done'" class="step-icon" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span v-else-if="step.status === 'in_progress'" class="step-spinner"></span>
+                <span v-else class="step-pending"></span>
+              </span>
+              <span class="step-title" :class="{ 'step-done-text': step.status === 'done' }">{{ step.title }}</span>
+              <span v-if="step.dependency" class="step-dependency">{{ step.dependency }}</span>
+            </div>
+          </div>
+        </div>
         <div class="input-section">
           <input
             v-model="userInput"
@@ -459,6 +505,10 @@ const downloading = ref<boolean>(false)
 const isBuilding = ref<boolean>(false)
 const deploying = ref<boolean>(false)
 
+// 任务计划面板（全局，固定在聊天区底部）
+const currentPlanSteps = ref<PlanStep[]>([])
+const currentPlanSummary = ref('')
+
 const statusText = ref('开始对话吧，精彩即将呈现')
 const statusHint = ref('AI 正在准备为您创作')
 
@@ -575,12 +625,12 @@ const downloadCode = async () => {
     if (contentDisposition) {
       // 优先匹配 filename*=UTF-8''xxx 编码格式
       const utf8Match = contentDisposition.match(/filename\*=UTF-8''(.+)/i)
-      if (utf8Match) {
+      if (utf8Match && utf8Match[1]) {
         filename = decodeURIComponent(utf8Match[1].replace(/"/g, ''))
       } else {
         // 回退匹配 filename="xxx" 格式
         const match = contentDisposition.match(/filename="?([^";\n]+)"?/i)
-        if (match) {
+        if (match && match[1]) {
           filename = match[1]
         }
       }
@@ -633,6 +683,85 @@ const handleScroll = () => {
   }
 }
 
+/** 计划步骤数据结构 */
+interface PlanStep {
+  status: 'done' | 'in_progress' | 'pending'
+  title: string
+  dependency?: string
+}
+
+/** 解析 updatePlan 的 result 字段，提取任务计划步骤 */
+const parsePlanFromResult = (result: string): { steps: PlanStep[]; summary: string } => {
+  // 处理所有可能的换行符表示形式（后端两层JSON序列化可能导致多重转义）
+  let text = result
+  // 情况C: \\n（两个字符的 \ 和一个字符的 \ + n）→ 先转为字面量 \n
+  text = text.replace(/\\\\n/g, '\n')
+  // 情况B: \n（字面量反斜杠+n）→ 转为真实换行
+  text = text.replace(/\\n/g, '\n')
+  // 处理 Windows 风格 \r\n
+  text = text.replace(/\\r/g, '')
+
+  const steps: PlanStep[] = []
+  let summary = ''
+
+  const lines = text.split('\n')
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+
+    // 匹配 [x] / [>] / [ ] 开头的步骤行
+    const stepMatch = trimmed.match(/^\[(x|>| )\]\s+(.+)$/)
+    if (stepMatch) {
+      const marker = stepMatch[1]
+      let status: PlanStep['status']
+      if (marker === 'x') status = 'done'
+      else if (marker === '>') status = 'in_progress'
+      else status = 'pending'
+
+      let title = stepMatch[2] || ''
+      // 如果有 ##N 前缀，保留
+      // 防止单步标题过长
+      if (title.length > 200) {
+        title = title.slice(0, 200) + '...'
+      }
+
+      steps.push({ status, title })
+      continue
+    }
+
+    // 匹配"依赖计划"行，挂到上一步
+    if (/^依赖/.test(trimmed) && steps.length > 0) {
+      const lastStep = steps[steps.length - 1]
+      if (lastStep) lastStep.dependency = trimmed
+      continue
+    }
+
+    // 摘要行
+    if (trimmed.includes('任务计划执行情况')) {
+      summary = trimmed
+    }
+  }
+
+  // 兜底解析：如果正则一条都没匹配到，按 ##N 切分
+  if (steps.length === 0 && text.includes('##')) {
+    const parts = text.split(/(?=##\d+)/)
+    for (const part of parts) {
+      const trimmed = part.trim()
+      if (!trimmed) continue
+      const stepMatch = trimmed.match(/^(##\d+)\s+(.+)$/s)
+      if (stepMatch) {
+        let title = (stepMatch[1] + ' ' + stepMatch[2]).trim()
+        if (title.length > 200) {
+          title = title.slice(0, 200) + '...'
+        }
+        steps.push({ status: 'pending' as PlanStep['status'], title })
+      }
+    }
+  }
+
+  return { steps, summary }
+}
+
 // 公共的发送消息给 AI 的函数
 const sendPromptToAI = async (userMessage: string) => {
   // 每次发送前清空待处理文本
@@ -653,6 +782,9 @@ const sendPromptToAI = async (userMessage: string) => {
     isMarkdown: true,
     isThinking: true,
     content: '',
+    thinkingContent: '',
+    thinkingExpanded: false,
+    hasPlan: false,
   })
   currentMarkdownId.value = aiMsgId
 
@@ -661,10 +793,10 @@ const sendPromptToAI = async (userMessage: string) => {
 
   // 启动思考文字轮播，每 4 秒切换，让用户在等待 AI 输出时明确感知"正在工作"
   thinkingMsgIndex = 0
-  thinkingText.value = thinkingMessages[0]
+  thinkingText.value = thinkingMessages[0]!
   thinkingInterval = setInterval(() => {
     thinkingMsgIndex = (thinkingMsgIndex + 1) % thinkingMessages.length
-    thinkingText.value = thinkingMessages[thinkingMsgIndex]
+    thinkingText.value = thinkingMessages[thinkingMsgIndex]!
   }, 4000)
 
   await nextTick()
@@ -673,6 +805,9 @@ const sendPromptToAI = async (userMessage: string) => {
   const url = `${BACKEND_BASE_URL}/api/app/chat/gen/code?appId=${encodeURIComponent(appId.value)}&userMessage=${encodeURIComponent(userMessage)}`
   const source = new EventSource(url, { withCredentials: true })
   let isDone = false
+
+  // 思考内容状态：累积 LLM 思考过程文本
+  let accumulatedThinking = ''
 
   const closeSource = () => {
     if (source.readyState !== EventSource.CLOSED) {
@@ -714,8 +849,57 @@ const sendPromptToAI = async (userMessage: string) => {
       closeSource()
       return
     }
+
     try {
       const parsed = JSON.parse(event.data)
+      const rawD = parsed.d
+
+      // 尝试二次解析 d 字段，判断是否为特殊事件
+      if (rawD && typeof rawD === 'string') {
+        try {
+          const innerParsed = JSON.parse(rawD)
+
+          // thinking_content：累积到思考面板
+          if (innerParsed.type === 'thinking_content') {
+            accumulatedThinking += innerParsed.data || ''
+            const aiMessage = messages.value.find(
+              (msg) => msg.id === currentMarkdownId.value && msg.sender === 'ai' && msg.isMarkdown === true,
+            )
+            if (aiMessage) {
+              aiMessage.thinkingContent = accumulatedThinking
+              aiMessage.thinkingExpanded = true
+            }
+            if (isPageVisible.value) {
+              await nextTick()
+              scrollToBottom()
+            }
+            return
+          }
+
+          // tool_request(updatePlan)：更新全局任务计划面板
+          if (innerParsed.type === 'tool_request' && innerParsed.name === 'updatePlan') {
+            const planData = parsePlanFromResult(innerParsed.result || '')
+            currentPlanSteps.value = planData.steps
+            currentPlanSummary.value = planData.summary
+            // 标记当前 AI 消息有关联计划
+            const aiMessage = messages.value.find(
+              (msg) => msg.id === currentMarkdownId.value && msg.sender === 'ai',
+            )
+            if (aiMessage) {
+              aiMessage.hasPlan = true
+            }
+            if (isPageVisible.value) {
+              await nextTick()
+              scrollToBottom()
+            }
+            return
+          }
+        } catch (_) {
+          // d 不是 JSON 字符串，走普通流程
+        }
+      }
+
+      // 普通消息处理：d 就是消息文本
       const text = parsed.d ?? parsed.content ?? event.data
       await appendText(String(text))
     } catch (err) {
@@ -727,6 +911,9 @@ const sendPromptToAI = async (userMessage: string) => {
     isDone = true
     closeSource()
     stopProcessingIndicator()
+    // 清理思考内容状态
+    accumulatedThinking = ''
+    currentPlanSteps.value = []
     if (event.data && event.data !== '[]') {
       try {
         const parsed = JSON.parse(event.data)
@@ -743,6 +930,9 @@ const sendPromptToAI = async (userMessage: string) => {
     closeSource()
     stopThinkingAnimation()
     stopProcessingIndicator()
+    // 清理思考内容状态
+    accumulatedThinking = ''
+    currentPlanSteps.value = []
 
     let errorMessage = '请求出错，请稍后重试。'
     try {
@@ -770,6 +960,9 @@ const sendPromptToAI = async (userMessage: string) => {
       isDone = true
       stopThinkingAnimation()
       stopProcessingIndicator()
+      // 清理思考内容状态
+      accumulatedThinking = ''
+      currentPlanSteps.value = []
       const thinkingMsg = messages.value.find(
         (msg) => msg.isThinking && msg.id === currentMarkdownId.value,
       )
@@ -2019,6 +2212,299 @@ watch(previewVersion, () => {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 思考内容面板样式 */
+.thinking-panel {
+  margin-bottom: 12px;
+  border: 1px solid rgba(102, 204, 255, 0.3);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(240, 249, 255, 0.8) 0%, rgba(230, 244, 252, 0.6) 100%);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 204, 255, 0.15);
+}
+
+.thinking-panel:hover {
+  box-shadow: 0 4px 12px rgba(102, 204, 255, 0.25);
+  border-color: rgba(102, 204, 255, 0.5);
+}
+
+.thinking-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.thinking-panel-header:hover {
+  background: rgba(102, 204, 255, 0.1);
+}
+
+.thinking-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  flex: 1;
+  letter-spacing: 0.3px;
+}
+
+.brain-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.thinking-panel-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.status-dot.thinking {
+  background: #66ccff;
+  box-shadow: 0 0 8px rgba(102, 204, 255, 0.6);
+  animation: statusPulse 1.5s ease-in-out infinite;
+}
+
+.status-dot.done {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+.status-text {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.thinking-chevron {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.thinking-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.thinking-panel-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.thinking-panel.expanded .thinking-panel-body {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.thinking-text {
+  padding: 0 16px 16px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #475569;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  border-top: 1px solid rgba(102, 204, 255, 0.2);
+  margin-top: 0;
+  padding-top: 12px;
+}
+
+.thinking-panel.expanded .thinking-text {
+  border-top: 1px solid rgba(102, 204, 255, 0.3);
+}
+
+/* 思考内容面板的滚动条样式 */
+.thinking-panel-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.thinking-panel-body::-webkit-scrollbar-track {
+  background: rgba(102, 204, 255, 0.1);
+  border-radius: 3px;
+}
+
+.thinking-panel-body::-webkit-scrollbar-thumb {
+  background: rgba(102, 204, 255, 0.4);
+  border-radius: 3px;
+}
+
+.thinking-panel-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 204, 255, 0.6);
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+/* 任务计划面板样式（极简） */
+
+.plan-panel-wrapper {
+  flex-shrink: 0;
+  padding: 4px 16px 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.plan-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 4px;
+}
+
+.plan-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.plan-panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.plan-panel-summary {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-left: auto;
+}
+
+.plan-panel-body {
+  /* 纯块级流，子元素自然堆叠，物理上不可重叠 */
+}
+
+.plan-step {
+  display: block;
+  padding: 5px 0;
+  min-height: 22px;
+  line-height: 1.6;
+}
+
+.step-marker {
+  display: inline-block;
+  vertical-align: middle;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+}
+
+.step-icon {
+  display: inline-block;
+  vertical-align: middle;
+  width: 14px;
+  height: 14px;
+  animation: checkPop 0.4s ease-out;
+}
+
+.step-spinner {
+  display: inline-block;
+  vertical-align: middle;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #66ccff, #3b82f6);
+  animation: planPulse 1.8s ease-in-out infinite;
+  position: relative;
+}
+
+.step-spinner::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: spinnerCore 1.8s ease-in-out infinite;
+}
+
+.step-pending {
+  display: inline-block;
+  vertical-align: middle;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid #cbd5e1;
+  background: transparent;
+}
+
+.step-title {
+  display: inline;
+  vertical-align: middle;
+  font-size: 12px;
+  color: #475569;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.step-done-text {
+  color: #94a3b8;
+  text-decoration: line-through;
+  text-decoration-color: rgba(148, 163, 184, 0.35);
+}
+
+.step-dependency {
+  display: inline;
+  font-size: 10px;
+  color: #94a3b8;
+  padding-left: 6px;
+  margin-left: 4px;
+  border-left: 1px solid rgba(102, 204, 255, 0.25);
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes spinnerCore {
+  0%, 100% { transform: scale(0.6); }
+  50% { transform: scale(1); }
+}
+
+@keyframes planPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(102, 204, 255, 0.4); }
+  50% { box-shadow: 0 0 0 3px rgba(102, 204, 255, 0); }
+}
+
+@media (max-width: 768px) {
+  .thinking-panel-title { font-size: 13px; }
+  .status-text { font-size: 11px; }
+  .thinking-text { font-size: 12px; padding: 0 12px 12px; padding-top: 10px; }
+  .plan-panel-title { font-size: 10px; }
+  .plan-panel-summary { font-size: 9px; }
+  .step-title { font-size: 11px; }
 }
 </style>
 
