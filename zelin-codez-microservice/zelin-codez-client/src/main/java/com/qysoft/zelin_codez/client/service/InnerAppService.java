@@ -15,5 +15,5 @@ public interface InnerAppService {
 
     App getById(Serializable id);
 
-    boolean updateById(Serializable id);
+    boolean updateById(App app);
 }

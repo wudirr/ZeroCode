@@ -1,4 +1,4 @@
-package com.qysoft.zelin_codez.common.annotation;
+package com.qysoft.zelin_codez.model.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

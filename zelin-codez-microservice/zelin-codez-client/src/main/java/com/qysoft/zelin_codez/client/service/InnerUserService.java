@@ -48,7 +48,7 @@ public interface InnerUserService {
      * @param ids id集合
      * @return User对象集合
      */
-    List<User> listByIds(Collection<?> ids);
+    List<User> listByIds(Collection<? extends Serializable> ids);
 
     /**
      * 将User对象转化成VO对象
