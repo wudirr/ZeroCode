@@ -9,8 +9,6 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import java.util.HashMap;
 
-import static com.fasterxml.jackson.databind.type.LogicalType.Map;
-
 /**
  * @Description MyBatis逆向生成代码
  * @Author wudi
@@ -18,11 +16,12 @@ import static com.fasterxml.jackson.databind.type.LogicalType.Map;
  **/
 public class MyBatisCodeGenerator {
 
-    public static final String[] TABLES = {"app"};
+    public static final String[] TABLES = {"chat_event_log"};
+
     public static void main(String[] args) {
         //获取数据库配置信息
         Dict dict = YamlUtil.loadByPath("application.yml");
-        HashMap<String,Object> dataSourceConfig = dict.getByPath("spring.datasource",HashMap.class);
+        HashMap<String, Object> dataSourceConfig = dict.getByPath("spring.datasource", HashMap.class);
         String url = String.valueOf(dataSourceConfig.get("url"));
         String username = String.valueOf(dataSourceConfig.get("username"));
         String password = String.valueOf(dataSourceConfig.get("password"));
@@ -82,8 +81,8 @@ public class MyBatisCodeGenerator {
 
         //设置表前缀和只生成哪些表，setGenerateTable 未配置时，生成所有表
         globalConfig.getStrategyConfig()
-                        .setGenerateTable(TABLES)
-                        .setLogicDeleteColumn("isDelete");
+                .setGenerateTable(TABLES)
+                .setLogicDeleteColumn("isDelete");
 
         //设置生成 entity 并启用 Lombok
         globalConfig.enableEntity()

@@ -1,8 +1,8 @@
 package com.qysoft.zelin_codez.langgraph4j.node;
 
-import com.qysoft.zelin_codez.common.constant.AppConstant;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.common.utils.SpringContextUtil;
+import com.qysoft.zelin_codez.common.utils.constant.AppConstant;
 import com.qysoft.zelin_codez.core.AiCodeGeneratorFacade;
 import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.exception.ErrorCode;

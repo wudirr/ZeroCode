@@ -1,0 +1,33 @@
+package com.qysoft.zelin_codez.ai.messages;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 流式消息类型枚举
+ */
+@RequiredArgsConstructor
+@Getter
+public enum StreamMessageTypeEnum {
+
+    AI_RESPONSE("ai_response", "AI回复"),
+
+    TOOL_REQUEST("tool_request", "工具请求"),
+
+    TOOL_EXECUTED("tool_executed", "工具调用结果"),
+
+    THINKING_CONTENT("thinking_content", "思考内容");
+
+    private final String value;
+
+    private final String text;
+
+    public static StreamMessageTypeEnum getByValue(String value) {
+        for (StreamMessageTypeEnum streamMessageTypeEnum : StreamMessageTypeEnum.values()) {
+            if (streamMessageTypeEnum.value.equals(value)) {
+                return streamMessageTypeEnum;
+            }
+        }
+        return null;
+    }
+}

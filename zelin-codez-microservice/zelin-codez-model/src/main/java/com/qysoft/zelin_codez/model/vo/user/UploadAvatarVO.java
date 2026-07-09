@@ -1,0 +1,19 @@
+package com.qysoft.zelin_codez.model.vo.user;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+import java.io.Serial;
+import java.io.Serializable;
+
+/**
+ * @Description 上传头像VO模型
+ * @Author wudi
+ * @Date 2026/4/7 11:38
+ **/
+@Data
+@AllArgsConstructor
+public class UploadAvatarVO implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+}

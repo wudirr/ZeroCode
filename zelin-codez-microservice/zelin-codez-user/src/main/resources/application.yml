@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: zelin_codez_user
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/zelin_codez?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+    # 数据库用户名
+    username: root
+    # 数据库密码
+    password: 14141212yangliU
+  session:
+    store-type: redis
+    # 30 天过期
+    timeout: 2592000
+  data:
+    redis:
+      host: 192.168.93.132
+      port: 6379
+      password: ""
+      database: 0
+server:
+  port: 8124
+  servlet:
+    context-path: /api
+    session:
+      cookie:
+        max-age: 259200
+# springdoc-openapi
+springdoc:
+  group-configs:
+    - group: 'default'
+      packages-to-scan: com.qysoft.zelin_codez.controller
+# knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+mybatis-flex:
+  mapper-locations: classpath:/mapper/*.xml
