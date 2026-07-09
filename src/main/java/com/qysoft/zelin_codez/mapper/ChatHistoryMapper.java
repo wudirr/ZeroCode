@@ -1,7 +1,7 @@
-package com.qysoft.zelin_codez.app.mapper;
+package com.qysoft.zelin_codez.mapper;
 
 import com.mybatisflex.core.BaseMapper;
-import com.qysoft.zelin_codez.model.entity.ChatHistory;
+import com.qysoft.zelin_codez.domain.entity.ChatHistory;
 
 /**
  * 对话历史 映射层。
