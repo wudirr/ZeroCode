@@ -30,6 +30,37 @@ import static org.bsc.langgraph4j.StateGraph.START;
 public class CodeGenWorkFlow {
 
     /**
+     * 执行工作流
+     *
+     * @param initPrompt 初始提示词
+     * @return 最终的状态上下文对象
+     */
+    public WorkFlowContext executeWorkFlow(String initPrompt) {
+        log.info("开始执行生成代码工作流,初始内容:{}", initPrompt);
+        CompiledGraph<MessagesState<String>> compiledGraph = getCompiledGraph();
+        GraphRepresentation codeGenWorkFlow = compiledGraph.getGraph(GraphRepresentation.Type.MERMAID, "codeGenWorkFlow");
+        log.info("mermaid结果:\n{}", codeGenWorkFlow);
+        //构建初始状态
+        WorkFlowContext context = WorkFlowContext.builder()
+                .currentStep("初始化")
+                .initPrompt(initPrompt)
+                .build();
+        WorkFlowContext finalContext = null;
+        log.info("开始执行工作流");
+        int stepCount = 1;
+        for (NodeOutput<MessagesState<String>> item : compiledGraph.stream(Map.of(WorkFlowContext.WORK_FLOW_CONTEXT_KEY, context))) {
+            log.info("===== 执行工作流第{}步完成 ====", stepCount++);
+            //获取执行的状态
+            WorkFlowContext currentContext = WorkFlowContext.getContext(item.state());
+            if (currentContext != null) {
+                log.info("当前步骤上下文:{}", currentContext);
+                finalContext = currentContext;
+            }
+        }
+        return finalContext;
+    }
+
+    /**
      * 编译工作流图
      *
      * @return 编译后的工作流图
@@ -90,36 +121,5 @@ public class CodeGenWorkFlow {
             return BUILD;
         }
         return SKIP;
-    }
-
-    /**
-     * 执行工作流
-     *
-     * @param initPrompt 初始提示词
-     * @return 最终的状态上下文对象
-     */
-    public WorkFlowContext executeWorkFlow(String initPrompt) {
-        log.info("开始执行生成代码工作流,初始内容:{}", initPrompt);
-        CompiledGraph<MessagesState<String>> compiledGraph = getCompiledGraph();
-        GraphRepresentation codeGenWorkFlow = compiledGraph.getGraph(GraphRepresentation.Type.MERMAID, "codeGenWorkFlow");
-        log.info("mermaid结果:\n{}", codeGenWorkFlow);
-        //构建初始状态
-        WorkFlowContext context = WorkFlowContext.builder()
-                .currentStep("初始化")
-                .initPrompt(initPrompt)
-                .build();
-        WorkFlowContext finalContext = null;
-        log.info("开始执行工作流");
-        int stepCount = 1;
-        for (NodeOutput<MessagesState<String>> item : compiledGraph.stream(Map.of(WorkFlowContext.WORK_FLOW_CONTEXT_KEY, context))) {
-            log.info("===== 执行工作流第{}步完成 ====", stepCount++);
-            //获取执行的状态
-            WorkFlowContext currentContext = WorkFlowContext.getContext(item.state());
-            if (currentContext != null) {
-                log.info("当前步骤上下文:{}", currentContext);
-                finalContext = currentContext;
-            }
-        }
-        return finalContext;
     }
 }

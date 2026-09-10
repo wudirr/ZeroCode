@@ -82,7 +82,7 @@ public class CodeGeneratorNode {
      */
     private static String concatenateErrorMessage(QualityResult qualityResult) {
         StringBuilder errorMessageBuilder = new StringBuilder();
-        errorMessageBuilder.append("代码质量检查未通过,请根据以下建议进行修改:").append("\n\n");
+        errorMessageBuilder.append("代码质量检查未通过,下面是报错信息:").append("\n\n");
         qualityResult.getErrors().forEach(error -> {
             errorMessageBuilder.append("- ").append(error).append("\n");
         });
