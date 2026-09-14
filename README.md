@@ -9,7 +9,6 @@
 基于 LangChain4j 与 LangGraph4j 构建，支持工具调用生成、Workflow 编排  
 内置结构化 TODO 任务计划、三层上下文压缩和过程可视化，覆盖「生成 → 修改 → 预览 → 部署」完整链路。
 
-
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Java](https://img.shields.io/badge/Java-21+-orange.svg)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-brightgreen.svg)
@@ -19,7 +18,6 @@
 ![MySQL](https://img.shields.io/badge/MySQL-Event_Log-4479A1.svg)
 ![DeepSeek](https://img.shields.io/badge/DeepSeek-V4--Pro-4B7BEC.svg)
 ![TODO](https://img.shields.io/badge/TODO-updatePlan-1677ff.svg)
-
 
 [快速开始](#快速开始) • [核心设计](#核心设计) • [核心能力](#核心能力) • [技术架构](#技术架构) • [工作流](#工作流) • [上下文压缩机制](#上下文压缩机制) • [缓存与限流](#缓存与限流) • [部署机制](#部署机制)
 
@@ -33,18 +31,22 @@
 Zero Code Studio 是一个以工程化为目标的 AI 代码生成平台。  
 它不仅能生成网页代码，还能在生成过程中展示模型思考、工具调用、TODO 计划推进和最终回复，并将每一轮对话沉淀为可回放的结构化事件。
 
-当前版本重点增强了长链路 Agent 能力：通过 `updatePlan` 管理带依赖关系的任务计划，通过 Redis + MySQL 保留运行态记忆和事件日志，并通过三层上下文压缩降低长对话中的 token 压力。
+当前版本重点增强了长链路 Agent 能力：通过 `updatePlan` 管理带依赖关系的任务计划，通过 Redis + MySQL
+保留运行态记忆和事件日志，并通过三层上下文压缩降低长对话中的 token 压力。
 
 
 ---
 
 ## 核心设计
 
-- **双引擎架构**：同一入口切换 `LangChain4j 工具调用模式`与 `LangGraph4j 工作流编排模式`，简单场景走工具循环快速出结果，复杂场景走图编排实现`路由 → 生成 → 质检 → 构建`的多步链路。
+- **双引擎架构**：同一入口切换 `LangChain4j 工具调用模式`与 `LangGraph4j 工作流编排模式`
+  ，简单场景走工具循环快速出结果，复杂场景走图编排实现`路由 → 生成 → 质检 → 构建`的多步链路。
 
-- **Agent 任务计划**：模型通过 `updatePlan` 工具维护带 DAG 依赖关系的结构化计划，后端持久化到 Redis 并校验依赖合法性，前端实时渲染进度面板；连续多轮工具调用未更新计划时自动注入提醒（Nag 机制）。
+- **Agent 任务计划**：模型通过 `updatePlan` 工具维护带 DAG 依赖关系的结构化计划，后端持久化到 Redis
+  并校验依赖合法性，前端实时渲染进度面板；连续多轮工具调用未更新计划时自动注入提醒（Nag 机制）。
 
-- **三层上下文压缩**：Layer 1 自动将旧工具结果替换为占位符；Layer 2 超 token 阈值时调用 LLM 生成保留变更对照的结构化摘要；Layer 3 支持手动触发即时压缩。完整记录始终保留在 MySQL 事件日志中。
+- **三层上下文压缩**：Layer 1 自动将旧工具结果替换为占位符；Layer 2 超 token 阈值时调用 LLM 生成保留变更对照的结构化摘要；Layer
+  3 支持手动触发即时压缩。完整记录始终保留在 MySQL 事件日志中。
 
 - **流式可观测**：SSE 实时推送`思考过程`、`工具调用`、`计划更新`、`最终回复`四类事件，前端分层渲染，生成过程全程可见。
 
@@ -53,14 +55,16 @@ Zero Code Studio 是一个以工程化为目标的 AI 代码生成平台。
 ---
 
 - 做了两种生成模式：`标准模式(LangChain4j)` 和 `工作流模式(LangGraph4j)`，同一入口可切换。
-- 做了`智能路由`与`模型分层`：`HTML / 多文件（原生 CSS + JS）`走轻量模型；`Vue 工程化生成`走重模型与`推理模式`，并支持展示`推理过程`与`工具调用`。
+- 做了`智能路由`与`模型分层`：`HTML / 多文件（原生 CSS + JS）`走轻量模型；`Vue 工程化生成`走重模型与`推理模式`
+  ，并支持展示`推理过程`与`工具调用`。
 - 做了`任务计划机制`：通过 `updatePlan` 工具让模型维护结构化 TODO，支持任务依赖、Redis 持久化和前端进度面板展示
 - 做了`工具调用能力`：支持`读目录`、`读文件`、`写文件`、`改文件`、`删文件`、`退出`。
 - 做了`上下文压缩机制`：支持工具结果微压缩、自动摘要压缩和手动压缩，并在摘要中保留关键修改前后值，避免长对话上下文膨胀。
 - 做了`记忆系统`：`Redis`短期记忆 + `MySQL`长期事件日志，可回放可重建。
 - 做了`LangGraph4j 工作流编排`：`图片并发收集` → `提示增强` → `智能选择路由` → `生成` → `质检` → `构建`。
 - 做了`流式对话闭环`：`SSE`实时返回，前端边生成边展示。
-- 做了`DeepSeek V4-Pro 适配`：用同一个 `deepseek-v4-pro` 模型承载普通对话与推理对话，通过 `thinking.type` 控制是否开启思考，并支持 `reasoning_effort` 调整推理强度。
+- 做了`DeepSeek V4-Pro 适配`：用同一个 `deepseek-v4-pro` 模型承载普通对话与推理对话，通过 `thinking.type`
+  控制是否开启思考，并支持 `reasoning_effort` 调整推理强度。
 - 做了`微服务支持`：按`应用服务`、`用户服务`、`截图服务`做了微服务拆分，并基于 `Dubbo + Nacos` 实现服务注册发现与远程调用。
 - 做了`过程可视化`：前端分层展示`思考过程`、`工具调用`、`最终回复`。
 - 做了`局部修改能力`：前端支持选取局部元素修改
@@ -73,7 +77,6 @@ Zero Code Studio 是一个以工程化为目标的 AI 代码生成平台。
 ## 核心能力
 
 ### 1) LLM 工程能力
-
 
 - 工作流编排：支持基于 `LangGraph4j` 对 LLM 行为进行工作流级编排（路由、生成、质检、构建）。
 - 工具调用：支持多工具协同执行，完整保留工具请求与结果。
@@ -211,7 +214,8 @@ sequenceDiagram
 - `Facade`：`AiCodeGeneratorFacade` 统一封装“生成 + 解析 + 保存”流程。
 - `Executor 分发`：`CodeParserExecutor` / `CodeFileSaverExecutor` 按 `CodeGenTypeEnum` 分发 HTML 与多文件实现。
 - `Template Method`：`CodeFileSaverTemplate` 固化保存骨架，子类只实现 `saveFiles` 细节。
-- `Patch 优先策略`：`HtmlCodeParser` 先解析 patch 协议，再回退完整 HTML；`HtmlCodeFileSaverTemplate` 优先应用 patch，再兜底全量写入。
+- `Patch 优先策略`：`HtmlCodeParser` 先解析 patch 协议，再回退完整 HTML；`HtmlCodeFileSaverTemplate` 优先应用
+  patch，再兜底全量写入。
 - `Reactive 聚合`：`StreamHandler` 在 `doOnNext/doOnComplete/doOnError` 中完成流式聚合与一致性落库。
 
 ---
@@ -250,14 +254,14 @@ flowchart TD
 
 ## 工具清单
 
-| 工具名       | 作用                       |
-| ------------ | -------------------------- |
-| `readDir`    | 读取目录结构               |
-| `readFile`   | 读取文件内容               |
-| `writeFile`  | 写入文件                   |
-| `modifyFile` | 替换指定内容实现局部修改   |
+| 工具名          | 作用            |
+|--------------|---------------|
+| `readDir`    | 读取目录结构        |
+| `readFile`   | 读取文件内容        |
+| `writeFile`  | 写入文件          |
+| `modifyFile` | 替换指定内容实现局部修改  |
 | `deleteFile` | 删除文件（含重要文件保护） |
-| `exit`       | 结束工具调用循环           |
+| `exit`       | 结束工具调用循环      |
 
 ---
 
@@ -313,11 +317,11 @@ context-compaction:
 2. 将 `token-threshold` 设为最大上下文的 **80%**（预留 20% 给当前轮的输入输出）。
 3. Token 估算方式：`总字符数 / 3`（中英混合场景的粗略估算）。
 
-| 模型            | 最大上下文  | 推荐阈值（80%） |
-| --------------- | ----------- | --------------- |
-| DeepSeek V4-Pro | 1M tokens   | 800000          |
-| GLM-4           | 128K tokens | 102400          |
-| Qwen-Plus       | 128K tokens | 102400          |
+| 模型              | 最大上下文       | 推荐阈值（80%） |
+|-----------------|-------------|-----------|
+| DeepSeek V4-Pro | 1M tokens   | 800000    |
+| GLM-4           | 128K tokens | 102400    |
+| Qwen-Plus       | 128K tokens | 102400    |
 
 也可以通过环境变量覆盖：
 
@@ -344,9 +348,9 @@ export ZERO_CODE_COMPACTION_MAX_SUMMARY_CHARS=300000
 
 微压缩只处理较旧的 `ToolExecutionResultMessage`。最近 8 条工具结果保持原文，旧的大段工具结果会替换为占位符。
 
-| 阶段 | 内容形态 | 目的 |
-| --- | --- | --- |
-| 压缩前 | 保存完整工具结果，例如 `readFile` 返回整段文件内容 | 方便模型理解刚刚读取到的具体内容 |
+| 阶段  | 内容形态                            | 目的                            |
+|-----|---------------------------------|-------------------------------|
+| 压缩前 | 保存完整工具结果，例如 `readFile` 返回整段文件内容 | 方便模型理解刚刚读取到的具体内容              |
 | 压缩后 | 保留工具名和调用痕迹，例如 `[已执行: readFile]` | 告诉模型“这个工具执行过”，但不再重复占用大量 token |
 
 压缩前：
@@ -404,15 +408,14 @@ export ZERO_CODE_COMPACTION_MAX_SUMMARY_CHARS=300000
 
 #### 压缩后仍然保留的信息
 
-| 信息类型 | 是否保留 | 说明 |
-| --- | --- | --- |
-| 用户核心需求 | 保留 | 摘要中保留用户目标、偏好和约束 |
-| 当前项目结构 | 保留 | 保留关键文件、组件、路由和页面状态 |
-| 修改前后值 | 保留 | 使用「修改前 → 修改后」格式记录，便于回退 |
-| 最近工具结果 | 保留 | 最近 8 条工具结果不做微压缩 |
-| 旧的大段工具结果 | 压缩 | 替换为 `[已执行: toolName]` |
-| 完整原始事件 | 保留 | 始终保存在 MySQL `chat_event_log` 中 |
-
+| 信息类型     | 是否保留 | 说明                             |
+|----------|------|--------------------------------|
+| 用户核心需求   | 保留   | 摘要中保留用户目标、偏好和约束                |
+| 当前项目结构   | 保留   | 保留关键文件、组件、路由和页面状态              |
+| 修改前后值    | 保留   | 使用「修改前 → 修改后」格式记录，便于回退         |
+| 最近工具结果   | 保留   | 最近 8 条工具结果不做微压缩                |
+| 旧的大段工具结果 | 压缩   | 替换为 `[已执行: toolName]`          |
+| 完整原始事件   | 保留   | 始终保存在 MySQL `chat_event_log` 中 |
 
 ---
 
@@ -432,9 +435,9 @@ export ZERO_CODE_COMPACTION_MAX_SUMMARY_CHARS=300000
 - 仅缓存前 10 页请求（`pageNum <= 10`），避免深页低频数据占用缓存。
 - `good_app_page` 单独配置 TTL 为 5 分钟（默认缓存 TTL 为 30 分钟）。
 - 发生精选数据变更时主动清理缓存，避免用户命中旧数据：
-  - 管理员更新应用且涉及精选状态变化时清理。
-  - 用户更新精选应用信息时清理。
-  - 删除精选应用时清理。
+    - 管理员更新应用且涉及精选状态变化时清理。
+    - 用户更新精选应用信息时清理。
+    - 删除精选应用时清理。
 
 ### 缓存序列化策略
 
@@ -494,10 +497,14 @@ npm run dev
 当前暂时使用单体后端服务，前端开发代理和接口文档生成地址都指向单体服务端口 `8123`。
 
 - 单体模式：后端启动根目录 Spring Boot 应用，接口地址为 `http://localhost:8123/api`。
-- 微服务模式：前端应统一访问微服务网关 / 聚合入口，例如 `http://localhost:8080/api`，不要直接访问 `8124`、`8125`、`8127` 等单个服务端口。
-- 开发代理切换：修改 `zero-code-frontend/vite.config.ts` 中 `/api` 的 `target`，单体为 `http://localhost:8123`，微服务为 `http://localhost:8080`。
-- 接口代码生成切换：修改 `zero-code-frontend/openapi2ts.config.ts` 中的 `schemaPath`，单体为 `http://localhost:8123/api/v3/api-docs`，微服务为 `http://localhost:8080/api/v3/api-docs`。
-- 临时覆盖方式：在 `zero-code-frontend/.env.local` 设置 `VITE_API_BASE_URL=http://localhost:8123/api` 或 `http://localhost:8080/api`；如需使用可视化编辑预览，优先保持默认同源 `/api` 并通过 Vite 代理切换后端。
+- 微服务模式：前端应统一访问微服务网关 / 聚合入口，例如 `http://localhost:8080/api`，不要直接访问 `8124`、`8125`、`8127`
+  等单个服务端口。
+- 开发代理切换：修改 `zero-code-frontend/vite.config.ts` 中 `/api` 的 `target`，单体为 `http://localhost:8123`
+  ，微服务为 `http://localhost:8080`。
+- 接口代码生成切换：修改 `zero-code-frontend/openapi2ts.config.ts` 中的 `schemaPath`
+  ，单体为 `http://localhost:8123/api/v3/api-docs`，微服务为 `http://localhost:8080/api/v3/api-docs`。
+- 临时覆盖方式：在 `zero-code-frontend/.env.local` 设置 `VITE_API_BASE_URL=http://localhost:8123/api`
+  或 `http://localhost:8080/api`；如需使用可视化编辑预览，优先保持默认同源 `/api` 并通过 Vite 代理切换后端。
 
 ---
 
@@ -517,13 +524,13 @@ npm run dev
 ### 首页
 
 ![首页](docs/images/home_page.png)
+
 ### TODO任务列表展示
 
 ![TODO任务列表展示](docs/images/TODO.png)
 ![TODO任务列表展示](docs/images/TODO2.png)
 
 ### 应用对话生成页
-
 
 ![应用对话生成页](docs/images/chat_page.png)
 
@@ -539,47 +546,3 @@ npm run dev
 
 ![一键部署结果页 1](docs/images/deploy_1.png)
 ![一键部署结果页 2](docs/images/deploy_2.png)
-
-
----
-
-## License
-
-MIT
-
----
-
-## Author
-
-**Eric**
-
-- 学历：UNSW IT 硕士 + 西南大学本科。
-- 职业：Java 后端程序员。
-- 博客：[代码丰](https://blog.csdn.net/qq_44716086)。
-- 微信号：LQF-dev（随时欢迎骚扰）。
-
-- 如果这个项目对你有帮助，欢迎点个 ⭐
-
----
-
-## 🏅 Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=LQF-dev/Zero-code&type=Date)](https://www.star-history.com/#LQF-dev/Zero-code&Date)
-
----
-
-## 更新记录
-
-### 2026-04-30
-
-- 新增`任务依赖计划`：设计思路是让 TODO 计划成为可表达依赖关系的任务图。模型在 `updatePlan` 中为任务声明 `deps`，后端校验依赖任务完成后才允许推进到 `in_progress`，前端按依赖层级展示计划进度。
-
-- 新增`PlanTracker 状态管理`：设计思路是让后端只负责接收和保存模型提交的最新计划，不自动推断任务完成状态；每次 `updatePlan` 都会用新的 `items` 全量覆盖旧计划，并重置“连续未更新计划”的工具调用计数。
-- 新增`计划更新提醒`：如果模型连续多次读写文件但没有调用 `updatePlan`工具，发送给大模型的提示词中会追加 reminder，提醒模型及时把当前任务标记为 `completed` 并推进下一个 `in_progress`。
-- 新增`前端计划面板`：渲染 TODO 面板，展示任务完成数量、当前执行项和整体进度条。
-
-### 2026-04-29
-
-- 新增`上下文压缩机制`：设计思路是把 Redis 中的结构化会话记忆作为运行态上下文，在调用模型前优先压缩旧工具结果；当上下文继续增长到阈值后，再通过摘要压缩保留关键需求、决策、文件状态和未完成任务，减少长链路 Agent 反复回放大段工具结果的问题。
-- 新增`DeepSeek V4-Pro 模型适配`：设计思路是顺应 DeepSeek V4 的统一模型模式，不再用 `deepseek-chat` / `deepseek-reasoner` 两套模型区分普通与推理，而是统一使用 `deepseek-v4-pro`，普通链路显式关闭 `thinking`，Vue 工程化生成链路开启 `thinking` 并配置更高推理强度。
-- 新增`项目结构拆分`：设计思路是让单体、微服务、前端三个工程边界更清晰。根目录只保留聚合构建与公共说明，单体应用放入 `zero-code-monolith`，微服务应用保留在 `zero-code-microservice`，前端保留在 `zero-code-frontend`，便于后续独立演进和部署。
