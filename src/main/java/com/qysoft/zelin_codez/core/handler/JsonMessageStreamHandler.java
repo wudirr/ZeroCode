@@ -12,6 +12,7 @@ import com.qysoft.zelin_codez.core.build.VueProjectBuilder;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.manager.TurnAccumulatorManager;
+import com.qysoft.zelin_codez.manager.TurnCancellationManager;
 import com.qysoft.zelin_codez.service.impl.TurnFlushService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,9 @@ public class JsonMessageStreamHandler {
 
     @Resource
     private TurnFlushService turnFlushService;
+
+    @Resource
+    private TurnCancellationManager turnCancellationManager;
 
     /**
      * 消息处理主方法
@@ -99,6 +103,18 @@ public class JsonMessageStreamHandler {
                 log.error("保存历史聊天记录失败", errorMessage);
                 return null;
             });
+        }).doOnCancel(() -> {
+            if (turnCancellationManager.isCancelled(appId)) {
+                // 如果当前应用取消了,触发对应的冲洗事件,避免和正常complete后的close冲突
+                log.warn("SSE流式输出取消, turnId = {}, appId = {}", turnId, appId);
+                // 异步处理取消对话事件
+                CompletableFuture.runAsync(() -> {
+                    turnFlushService.flushCanceled(turnId, "用户取消对话导致提前终止输出");
+                }).exceptionally(errorMessage -> {
+                    log.error("处理取消对话事件失败", errorMessage);
+                    return null;
+                });
+            }
         });
     }
 

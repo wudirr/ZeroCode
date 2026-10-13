@@ -13,6 +13,9 @@ import com.qysoft.zelin_codez.manager.TurnAccumulatorManager;
 import com.qysoft.zelin_codez.service.ChatEventLogService;
 import com.qysoft.zelin_codez.service.ChatHistoryService;
 import com.qysoft.zelin_codez.service.UserService;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
@@ -42,6 +45,10 @@ public class TurnFlushService {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private ChatMemoryStore redisChatMemoryStore;
+
 
     /**
      * 正常冲洗上下文消息
@@ -89,6 +96,31 @@ public class TurnFlushService {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, e.getMessage());
         }
     }
+
+    /**
+     * 冲洗取消对话时的上下文消息
+     *
+     * @param turnId  轮次Id
+     * @param message 取消消息
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void flushCanceled(String turnId, String message) {
+        TurnAccumulator accumulator = TurnAccumulatorManager.getAccumulator(turnId);
+        ThrowUtils.throwIf(accumulator == null, ErrorCode.SYSTEM_ERROR);
+        if (!accumulator.beginFlush()) {
+            return;
+        }
+        try {
+            flushTransactional(accumulator, message);
+            // 补充用户停止对话的消息到Agent上下文当中
+            addCancelContent2Memory(accumulator);
+            TurnAccumulatorManager.removeAccumulator(turnId);
+        } catch (Exception e) {
+            accumulator.resetFlushFlagOrigin();
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, e.getMessage());
+        }
+    }
+
 
     /**
      * 冲洗操作
@@ -195,5 +227,24 @@ public class TurnFlushService {
         //批量添加到数据库
         boolean flag = chatEventLogService.saveBatch(chatEventLogList);
         ThrowUtils.throwIf(!flag, ErrorCode.SYSTEM_ERROR, "批量保存日志失败");
+    }
+
+    /**
+     * 补充用户取消对话的内容提示到Agent上下文当中
+     *
+     * @param accumulator 事件累加器
+     */
+    private void addCancelContent2Memory(TurnAccumulator accumulator) {
+        String message = accumulator.assistantMessage();
+        // 使用工具类截取片段内容
+        String abbreviate = StringUtils.abbreviate(message, 500);
+        String systemTipMessage = String.format("""
+                [系统提示] 上一轮生成被用户手动中断。中断前模型的输出片段:「%s」。
+                "已写入磁盘的文件修改均已生效,当前项目状态以磁盘为准。
+                """, abbreviate);
+        String memoryId = accumulator.getMemoryId();
+        List<ChatMessage> messages = redisChatMemoryStore.getMessages(memoryId);
+        messages.add(UserMessage.from(systemTipMessage));
+        redisChatMemoryStore.updateMessages(memoryId, messages);
     }
 }

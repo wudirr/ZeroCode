@@ -25,6 +25,7 @@ import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
 import com.qysoft.zelin_codez.manager.TurnAccumulatorManager;
+import com.qysoft.zelin_codez.manager.TurnCancellationManager;
 import com.qysoft.zelin_codez.mapper.AppMapper;
 import com.qysoft.zelin_codez.service.*;
 import jakarta.annotation.Resource;
@@ -73,6 +74,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private ChatEventLogService chatEventLogService;
+
+    @Resource
+    private TurnCancellationManager turnCancellationManager;
 
     @Override
     public AppVO getAppVO(App app) {
@@ -147,9 +151,13 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (!app.getUserId().equals(loginUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
+        if (turnCancellationManager.isCancelled(appId)) {
+            turnCancellationManager.clearCancelState(appId);
+        }
         //保存用户消息
 //        Boolean flag = chatHistoryService.addChatMessage(appId, userMessage, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser);
         //调用AI服务生成代码
+
         String memoryId = String.format("%s_%s", appId, codeGenType);
         String turnId = IdUtil.fastSimpleUUID();
         //开始聚合单轮对话上下文

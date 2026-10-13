@@ -20,6 +20,7 @@ import com.qysoft.zelin_codez.domain.vo.app.AppVO;
 import com.qysoft.zelin_codez.exception.BusinessException;
 import com.qysoft.zelin_codez.exception.ErrorCode;
 import com.qysoft.zelin_codez.exception.ThrowUtils;
+import com.qysoft.zelin_codez.manager.TurnCancellationManager;
 import com.qysoft.zelin_codez.service.AppService;
 import com.qysoft.zelin_codez.service.ContextCompactionService;
 import com.qysoft.zelin_codez.service.ProjectDownLoadService;
@@ -64,6 +65,9 @@ public class AppController {
 
     @Resource
     private ContextCompactionService contextCompactionService;
+
+    @Resource
+    private TurnCancellationManager turnCancellationManager;
 
     /**
      * 用户创建应用
@@ -305,6 +309,23 @@ public class AppController {
         ThrowUtils.throwIf(StringUtils.isBlank(userMessage), ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(httpServletRequest);
         return appService.chatToGenCode(appId, userMessage, loginUser);
+    }
+
+    /**
+     * 用户停止对话接口
+     *
+     * @param appId              应用Id
+     * @param httpServletRequest HTTP封装对象
+     * @return 是否取消成功
+     */
+    @GetMapping("/chat/stop/{appId}")
+    public Result<Boolean> stopChat(@PathVariable Long appId, HttpServletRequest httpServletRequest) {
+        userService.getLoginUser(httpServletRequest);
+        App app = appService.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        boolean flag = turnCancellationManager.cancelTurn(appId);
+        ThrowUtils.throwIf(!flag, ErrorCode.SYSTEM_ERROR, "取消失败, 请重试");
+        return Result.success(true);
     }
 
     /**

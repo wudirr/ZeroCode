@@ -11,4 +11,6 @@ public interface RedisConstant {
      * 计划状态缓存键前缀
      */
     String PLAN_STATE_KEY_PREFIX = "plan_state:";
+
+    String CANCEL_STATE_KEY_PREFIX = "cancel_state:";
 }

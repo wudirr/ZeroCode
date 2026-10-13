@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.qysoft.zelin_codez.ai.guardrails.PromptSafetyInputGuardrail;
+import com.qysoft.zelin_codez.ai.tools.ToolCancellationDecorator;
 import com.qysoft.zelin_codez.ai.tools.ToolManager;
 import com.qysoft.zelin_codez.common.enums.CodeGenTypeEnum;
 import com.qysoft.zelin_codez.common.utils.SpringContextUtil;
@@ -52,6 +53,9 @@ public class AiCodeGeneratorServiceFactory {
 
     @Resource
     private ContextCompactionService contextCompactionService;
+
+    @Resource
+    private ToolCancellationDecorator toolCancellationDecorator;
 
     /**
      * caffeine缓存对象
@@ -120,7 +124,7 @@ public class AiCodeGeneratorServiceFactory {
                         .chatModel(chatModel)
                         .streamingChatModel(reasoningStreamingChatModel)
                         .chatMemoryProvider(id -> chatMemory)
-                        .tools((Object[]) toolManager.getTools())
+                        .tools(toolCancellationDecorator.decorate(toolManager.getTools()))
                         .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(toolExecutionRequest, "ERROR EXECUTE TOOLS" + toolExecutionRequest.name()))
                         .inputGuardrails(new PromptSafetyInputGuardrail())
                         .build();
